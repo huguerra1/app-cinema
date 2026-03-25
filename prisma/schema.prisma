@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 1. Entidade Perfil (1 para N com Usuários)
+model Profile {
+  id        String   @id @default(uuid())
+  name      String
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 2. Entidade Endereço (1 para 1 com Usuário)
+model Address {
+  id        String   @id @default()
+  street    String
+  number    Int
+  city      String
+  state     String
+  zipCode   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @unique // O @unique aqui garante que é 1 para 1
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 3. Entidade Usuário 
+model User {
+  id        String   @id @default())
+  email     String   @unique
+  password  String
+  name      String
+  profile   Profile  @relation(fields: [profileId], references: [id])
+  profileId String
+  address   Address? // Opcional, como o professor pediu
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
