@@ -17,7 +17,7 @@ model Profile {
 
 // 2. Entidade Endereço (1 para 1 com Usuário)
 model Address {
-  id        String   @id @default()
+  id        String   @id @default(uuid())
   street    String
   number    Int
   city      String
@@ -31,13 +31,117 @@ model Address {
 
 // 3. Entidade Usuário 
 model User {
-  id        String   @id @default())
+  id        String   @id @default(uuid())
   email     String   @unique
   password  String
   name      String
   profile   Profile  @relation(fields: [profileId], references: [id])
   profileId String
   address   Address? // Opcional, como o professor pediu
+  orders    Order[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ============== CINEMA DOMAIN ==============
+
+model Genre {
+  id     String  @id @default(uuid())
+  name   String  @unique
+  movies Movie[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Movie {
+  id              String    @id @default(uuid())
+  title           String
+  durationMinutes Int
+  synopsis        String
+  genre           Genre     @relation(fields: [genreId], references: [id])
+  genreId         String
+  sessions        Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Room {
+  id       String    @id @default(uuid())
+  name     String
+  capacity Int
+  sessions Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  startTime DateTime
+
+  movie   Movie  @relation(fields: [movieId], references: [id])
+  movieId String
+
+  room   Room   @relation(fields: [roomId], references: [id])
+  roomId String
+
+  tickets Ticket[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([roomId, startTime])
+}
+
+model Ticket {
+  id        String   @id @default(uuid())
+  price     Float
+  seat      String
+
+  session   Session @relation(fields: [sessionId], references: [id])
+  sessionId String
+
+  order   Order? @relation(fields: [orderId], references: [id])
+  orderId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SnackCombo {
+  id     String                @id @default(uuid())
+  name   String                @unique
+  price  Float
+  orders SnackCombosOnOrders[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id     String  @id @default(uuid())
+  total  Float
+  user   User    @relation(fields: [userId], references: [id])
+  userId String
+
+  tickets     Ticket[]
+  snackCombos SnackCombosOnOrders[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SnackCombosOnOrders {
+  snackCombo   SnackCombo @relation(fields: [snackComboId], references: [id])
+  snackComboId String
+  order        Order      @relation(fields: [orderId], references: [id])
+  orderId      String
+  quantity     Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([snackComboId, orderId])
 }

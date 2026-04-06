@@ -5,9 +5,16 @@ import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 import { ProfileModule } from './profile/profile.module';
 import { AddressModule } from './address/address.module';
+import { GenreModule } from './genre/genre.module';
+import { MovieModule } from './movie/movie.module';
+import { RoomModule } from './room/room.module';
+import { SessionModule } from './session/session.module';
+import { TicketModule } from './ticket/ticket.module';
+import { SnackComboModule } from './snack-combo/snack-combo.module';
+import { OrderModule } from './order/order.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, ProfileModule, AddressModule],
+  imports: [PrismaModule, UsersModule, ProfileModule, AddressModule, GenreModule, MovieModule, RoomModule, SessionModule, TicketModule, SnackComboModule, OrderModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CineGestão - Compra de Ingressos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="./src/css/style.css" />
+  </head>
+  <body class="bg-light">
+    
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow">
+      <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1">🍿 CineGestão</span>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item"><a class="nav-link active fw-bold" href="#" data-target="view-sessoes">🎟️ Sessões</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" data-target="view-pdv">🛒 Fazer Pedido</a></li>
+            
+            <li class="nav-item d-none admin-only"><a class="nav-link text-warning" href="#" data-target="view-admin-filme">⚙️ Filme</a></li>
+            <li class="nav-item d-none admin-only"><a class="nav-link text-warning" href="#" data-target="view-admin-sala">⚙️ Sala</a></li>
+            <li class="nav-item d-none admin-only"><a class="nav-link text-warning" href="#" data-target="view-admin-sessao">⚙️ Sessão</a></li>
+            <li class="nav-item d-none admin-only"><a class="nav-link text-warning" href="#" data-target="view-admin-combo">⚙️ Combo</a></li>
+            <li class="nav-item d-none admin-only"><a class="nav-link text-warning" href="#" data-target="view-admin-genero">⚙️ Gênero</a></li>
+          </ul>
+
+          <div class="d-flex align-items-center ms-auto">
+            <span id="user-info" class="text-white me-3 d-none">Olá, <b id="user-name-display"></b></span>
+            
+            <a href="#" id="btn-login-nav" class="nav-link text-info fw-bold me-3" data-target="view-login">👤 Entrar / Cadastrar</a>
+            
+            <button id="btn-logout" class="btn btn-outline-danger btn-sm d-none me-3">Sair</button>
+            <button id="btn-toggle-admin" class="btn btn-outline-light btn-sm">Modo Admin</button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container">
+      <div id="alert-container" class="sticky-top pt-2"></div>
+
+      <section id="view-login" class="view-section d-none">
+        <div class="card shadow-sm col-md-5 mx-auto mt-5 border-primary">
+          <div class="card-header bg-primary text-white fw-bold text-center">Acessar Conta</div>
+          <div class="card-body">
+            <form id="form-login">
+              <div class="mb-3"><label>Email</label><input type="email" id="login-email" class="form-control" required></div>
+              <div class="mb-4"><label>Senha</label><input type="password" id="login-senha" class="form-control" required></div>
+              <button type="submit" class="btn btn-primary w-100">Entrar no Sistema</button>
+              <div class="mt-3 text-center"><a href="#" class="text-decoration-none nav-link d-inline text-primary" data-target="view-cadastro">Ainda não tem conta? Clique para Cadastrar</a></div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-cadastro" class="view-section d-none">
+        <div class="card shadow-sm col-md-5 mx-auto mt-5">
+          <div class="card-header bg-secondary text-white fw-bold text-center">Criar Nova Conta</div>
+          <div class="card-body">
+            <form id="form-cadastro">
+              <div class="mb-3"><label>Nome Completo</label><input type="text" id="cad-nome" class="form-control" required></div>
+              <div class="mb-3"><label>Email</label><input type="email" id="cad-email" class="form-control" required></div>
+              <div class="mb-4"><label>Senha</label><input type="password" id="cad-senha" class="form-control" required></div>
+              <button type="submit" class="btn btn-secondary w-100">Concluir Cadastro</button>
+              <div class="mt-3 text-center"><a href="#" class="text-decoration-none nav-link d-inline text-secondary" data-target="view-login">Já tem conta? Voltar para Login</a></div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-sessoes" class="view-section">
+        <h2 class="mb-4">Sessões Programadas</h2>
+        <div id="sessoes-list" class="row"></div>
+      </section>
+
+      <section id="view-pdv" class="view-section d-none">
+        <div class="card shadow-sm col-md-8 mx-auto border-success">
+          <div class="card-header bg-success text-white fw-bold">Caixa / Vender Ingresso</div>
+          <div class="card-body">
+            <form id="form-pedido">
+              <div class="mb-3">
+                <label>Cliente Autenticado</label>
+                <input type="text" id="pdv-usuario-nome" class="form-control text-primary fw-bold" readonly>
+              </div>
+              <div class="row mb-3">
+                <div class="col-8">
+                  <label>Escolha a Sessão</label>
+                  <select class="form-select" id="pdv-sessao" required></select>
+                </div>
+                <div class="col-4">
+                  <label>Assento</label>
+                  <input type="text" class="form-control" id="pdv-assento" placeholder="Ex: F12" required>
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-6">
+                  <label>Preço do Ingresso (R$)</label>
+                  <input type="number" step="0.01" class="form-control" id="pdv-preco-ingresso" required>
+                </div>
+                <div class="col-4">
+                  <label>Adicionar Combo?</label>
+                  <select class="form-select" id="pdv-combo"></select>
+                </div>
+                <div class="col-2">
+                  <label>Qtd</label>
+                  <input type="number" class="form-control" id="pdv-combo-qtd" value="1" min="1">
+                </div>
+              </div>
+              <button type="submit" class="btn btn-success w-100 btn-lg">Finalizar Pedido</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-admin-filme" class="view-section d-none admin-only"><div class="card shadow-sm col-md-8 mx-auto"><div class="card-header bg-warning text-dark fw-bold">Cadastrar Novo Filme</div><div class="card-body"><form id="form-filme"><div class="mb-3"><label>Título</label><input type="text" id="filme-titulo" class="form-control" required></div><div class="row mb-3"><div class="col"><label>Duração (min)</label><input type="number" id="filme-duracao" class="form-control" required></div><div class="col"><label>Sinopse</label><input type="text" id="filme-sinopse" class="form-control" required></div></div><div class="mb-4"><label>Gênero</label><select class="form-select" id="filme-genero" required></select></div><button type="submit" class="btn btn-dark w-100">Salvar Filme</button></form></div></div></section>
+      <section id="view-admin-sala" class="view-section d-none admin-only"><div class="card shadow-sm col-md-6 mx-auto"><div class="card-header bg-warning text-dark fw-bold">Cadastrar Nova Sala</div><div class="card-body"><form id="form-sala"><div class="mb-3"><label>Nome da Sala</label><input type="text" id="sala-nome" class="form-control" required></div><div class="mb-4"><label>Capacidade</label><input type="number" id="sala-capacidade" class="form-control" required></div><button type="submit" class="btn btn-dark w-100">Salvar Sala</button></form></div></div></section>
+      <section id="view-admin-sessao" class="view-section d-none admin-only"><div class="card shadow-sm col-md-8 mx-auto"><div class="card-header bg-warning text-dark fw-bold">Agendar Nova Sessão</div><div class="card-body"><form id="sessao-form"><div class="row mb-3"><div class="col"><label>Filme</label><select class="form-select" id="filme-select" required></select></div><div class="col"><label>Sala</label><select class="form-select" id="sala-select" required></select></div></div><div class="mb-4"><label>Horário (Start Time)</label><input type="datetime-local" class="form-control" id="horario-inicio" required /></div><button type="submit" class="btn btn-dark w-100">Agendar Sessão</button></form></div></div></section>
+      <section id="view-admin-combo" class="view-section d-none admin-only"><div class="card shadow-sm col-md-6 mx-auto"><div class="card-header bg-warning text-dark fw-bold">Cadastrar Lanche / Combo</div><div class="card-body"><form id="form-lanche"><div class="mb-3"><label>Nome do Combo</label><input type="text" id="lanche-nome" class="form-control" required></div><div class="mb-4"><label>Preço (R$)</label><input type="number" step="0.01" id="lanche-preco" class="form-control" required></div><button type="submit" class="btn btn-dark w-100">Salvar Combo</button></form></div></div></section>
+      <section id="view-admin-genero" class="view-section d-none admin-only"><div class="card shadow-sm col-md-6 mx-auto"><div class="card-header bg-warning text-dark fw-bold">Cadastrar Novo Gênero</div><div class="card-body"><form id="form-genero"><div class="mb-4"><label>Nome do Gênero</label><input type="text" id="genero-nome" class="form-control" required></div><button type="submit" class="btn btn-dark w-100">Salvar Gênero</button></form></div></div></section>
+
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="./src/ts/app.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: cinema-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: cinema_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    container_name: cinema-backend
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/cinema_db?schema=public
+    ports:
+      - '3000:3000'
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: cinema-frontend
+    depends_on:
+      - backend
+    ports:
+      - '8080:80'
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
