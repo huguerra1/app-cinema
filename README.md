@@ -41,7 +41,6 @@ Certifique-se de ter o [Node.js](https://nodejs.org/) e o [PostgreSQL](https://w
 ```bash
 git clone [https://github.com/huguerra1/app-cinema.git](https://github.com/huguerra1/app-cinema.git)
 cd app-cinema
-
 2. Configurando o Backend
 Bash
 cd backend
@@ -81,6 +80,3 @@ Movie, Genre, Room e Session (Domínio do Cinema).
 Ticket, SnackCombo, Order e SnackCombosOnOrders (Domínio de Vendas e Relacionamento N:M).
 
 Feito com dedicação por Hugo Fonseca Mourão 👨‍💻
-```bash
-git clone [https://github.com/huguerra1/app-cinema.git](https://github.com/huguerra1/app-cinema.git)
-cd app-cinema
