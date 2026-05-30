@@ -43,7 +43,16 @@ let TicketService = class TicketService {
         });
     }
     findAll() {
-        return this.prisma.ticket.findMany();
+        return this.prisma.ticket.findMany({
+            include: {
+                session: {
+                    include: {
+                        movie: true,
+                        room: true
+                    }
+                }
+            }
+        });
     }
     findOne(id) {
         return this.prisma.ticket.findUnique({ where: { id } });

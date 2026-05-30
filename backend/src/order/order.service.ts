@@ -86,7 +86,26 @@ export class OrderService {
     return this.prisma.order.findMany({
       include: {
         user: true,
-        tickets: true,
+        tickets: true, // Aqui ele traz apenas a Cadeira e Preço
+        snackCombos: { include: { snackCombo: true } },
+      },
+    });
+  }
+  // Novo método para buscar apenas a lista de pedidos de um usuário específico
+  findAllByUserId(userId: string) {
+    return this.prisma.order.findMany({
+      where: { userId: userId }, // <-- O filtro que barra pedidos de outras pessoas
+      include: {
+        user: true,
+        tickets: {
+          include: {
+            session: {
+              include: {
+                movie: true // Aqui trazemos o nome do filme bonitão!
+              }
+            }
+          }
+        },
         snackCombos: { include: { snackCombo: true } },
       },
     });
@@ -97,7 +116,15 @@ export class OrderService {
       where: { id },
       include: {
         user: true,
-        tickets: true,
+        tickets: {
+          include: {
+            session: {
+              include: {
+                movie: true
+              }
+            }
+          }
+        },
         snackCombos: { include: { snackCombo: true } },
       },
     });

@@ -30,6 +30,15 @@ export class OrderController {
     return this.orderService.findAll();
   }
 
+  // ========================================================
+  // NOVA ROTA: Busca os pedidos de um usuário específico
+  // ========================================================
+  @Get('user/:userId')
+  @ApiOperation({ summary: 'List all orders for a specific user' })
+  findAllByUserId(@Param('userId', ParseUUIDPipe) userId: string) {
+    return this.orderService.findAllByUserId(userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get an order by ID' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {

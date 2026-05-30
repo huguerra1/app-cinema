@@ -46,8 +46,17 @@ export class TicketService {
     });
   }
 
-  findAll() {
-    return this.prisma.ticket.findMany();
+ findAll() {
+    return this.prisma.ticket.findMany({
+      include: {
+        session: {
+          include: {
+            movie: true,
+            room: true
+          }
+        }
+      }
+    });
   }
 
   findOne(id: string) {

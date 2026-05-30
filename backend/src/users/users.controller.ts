@@ -2,12 +2,13 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UnauthorizedExceptio
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse , ApiBody } from '@nestjs/swagger';
+import { JwtService } from '@nestjs/jwt';
 
 @ApiTags('users') // Agrupa os endpoints sob a tag 'users'
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService,private jwtService: JwtService) {}
 
   // ==========================================
   // 1. CRIAR USUÁRIO (Cadastro)
@@ -23,24 +24,52 @@ export class UsersController {
   // ==========================================
   // 2. FAZER LOGIN
   // ==========================================
-  @Post('login')
-  @ApiOperation({ summary: 'Fazer login do usuário' })
+  // ==========================================
+  // 2. FAZER LOGIN (Agora com JWT!)
+  // ==========================================
+ @Post('login')
+  @ApiOperation({ summary: 'Fazer login e receber JWT' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', example: 'hugofmourao@gmail.com' },
+        password: { type: 'string', example: 'sua_senha_aqui' }
+      }
+    }
+  })
   async login(@Body() body: any) {
-    // Busca todos os usuários do banco
     const users = await this.usersService.findAll();
     
-    // Procura um usuário que tenha o mesmo email e senha digitados no front
+    // Procura o usuário
     const user = users.find(u => u.email === body.email && u.password === body.password);
 
     if (!user) {
-      // Se não achar, devolve Erro 401 (Não Autorizado)
       throw new UnauthorizedException('Email ou senha incorretos!');
     }
 
-    // Se achar, devolve os dados do usuário para o front-end salvar
-    return user;
-  }
+    // 1. Monta o "Payload" (A carga útil que vai dentro do Token)
+    // Nunca coloque senhas aqui! Apenas dados públicos e identificadores.
+    const payload = { 
+      sub: user.id, // 'sub' é o padrão JWT para o ID do usuário
+      email: user.email,
+      role: user.profile?.name || 'USER' 
+    };
 
+    // 2. Gera o Token criptografado
+    const token = await this.jwtService.signAsync(payload);
+
+    // 3. Devolve o Token e os dados do usuário
+    return {
+      access_token: token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        profile: user.profile?.name
+      }
+    };
+  }
   // ==========================================
   // 3. LISTAR TODOS OS USUÁRIOS
   // ==========================================

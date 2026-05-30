@@ -86,12 +86,38 @@ let OrderService = class OrderService {
             },
         });
     }
+    findAllByUserId(userId) {
+        return this.prisma.order.findMany({
+            where: { userId: userId },
+            include: {
+                user: true,
+                tickets: {
+                    include: {
+                        session: {
+                            include: {
+                                movie: true
+                            }
+                        }
+                    }
+                },
+                snackCombos: { include: { snackCombo: true } },
+            },
+        });
+    }
     findOne(id) {
         return this.prisma.order.findUnique({
             where: { id },
             include: {
                 user: true,
-                tickets: true,
+                tickets: {
+                    include: {
+                        session: {
+                            include: {
+                                movie: true
+                            }
+                        }
+                    }
+                },
                 snackCombos: { include: { snackCombo: true } },
             },
         });

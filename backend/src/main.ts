@@ -17,7 +17,7 @@ async function bootstrap() {
 
   // Configuração do Swagger
   const config = new DocumentBuilder()
-    .setTitle('CineGestão Pro API') // Atualizei o título para combinar com seu projeto
+    .setTitle('Cine Ouro Pro API') 
     .setDescription('Documentação da API do Cinema com NestJS e Prisma')
     .setVersion('1.0')
     .build();
@@ -28,7 +28,7 @@ async function bootstrap() {
   // ou continuar em 'api' (o Nest entende a diferença)
   SwaggerModule.setup('api', app, document); 
 
-  await app.listen(3000);
+  await app.listen(3000, '0.0.0.0');
   
   // O console.log agora reflete o prefixo
   console.log(`Application is running on: http://localhost:3000/api`);

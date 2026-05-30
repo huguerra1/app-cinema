@@ -6,46 +6,72 @@ export declare class TicketService {
     constructor(prisma: PrismaService);
     create(createTicketDto: CreateTicketDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         price: number;
         seat: string;
+        createdAt: Date;
+        updatedAt: Date;
         sessionId: string;
         orderId: string | null;
     }>;
-    findAll(): import("@prisma/client").Prisma.PrismaPromise<{
+    findAll(): import("@prisma/client").Prisma.PrismaPromise<({
+        session: {
+            movie: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                title: string;
+                durationMinutes: number;
+                synopsis: string;
+                genreId: string;
+            };
+            room: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                name: string;
+                capacity: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            startTime: Date;
+            movieId: string;
+            roomId: string;
+        };
+    } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         price: number;
         seat: string;
+        createdAt: Date;
+        updatedAt: Date;
         sessionId: string;
         orderId: string | null;
-    }[]>;
+    })[]>;
     findOne(id: string): import("@prisma/client").Prisma.Prisma__TicketClient<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         price: number;
         seat: string;
+        createdAt: Date;
+        updatedAt: Date;
         sessionId: string;
         orderId: string | null;
     } | null, null, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     update(id: string, updateTicketDto: UpdateTicketDto): import("@prisma/client").Prisma.Prisma__TicketClient<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         price: number;
         seat: string;
+        createdAt: Date;
+        updatedAt: Date;
         sessionId: string;
         orderId: string | null;
     }, never, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     remove(id: string): import("@prisma/client").Prisma.Prisma__TicketClient<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         price: number;
         seat: string;
+        createdAt: Date;
+        updatedAt: Date;
         sessionId: string;
         orderId: string | null;
     }, never, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;

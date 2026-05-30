@@ -10,13 +10,13 @@ async function bootstrap() {
     app.enableCors();
     app.useGlobalPipes(new common_1.ValidationPipe());
     const config = new swagger_1.DocumentBuilder()
-        .setTitle('CineGestão Pro API')
+        .setTitle('Cine Ouro Pro API')
         .setDescription('Documentação da API do Cinema com NestJS e Prisma')
         .setVersion('1.0')
         .build();
     const document = swagger_1.SwaggerModule.createDocument(app, config);
     swagger_1.SwaggerModule.setup('api', app, document);
-    await app.listen(3000);
+    await app.listen(3000, '0.0.0.0');
     console.log(`Application is running on: http://localhost:3000/api`);
 }
 bootstrap();

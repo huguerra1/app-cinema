@@ -29,6 +29,9 @@ let OrderController = class OrderController {
     findAll() {
         return this.orderService.findAll();
     }
+    findAllByUserId(userId) {
+        return this.orderService.findAllByUserId(userId);
+    }
     findOne(id) {
         return this.orderService.findOne(id);
     }
@@ -55,6 +58,14 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], OrderController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('user/:userId'),
+    (0, swagger_1.ApiOperation)({ summary: 'List all orders for a specific user' }),
+    __param(0, (0, common_1.Param)('userId', common_1.ParseUUIDPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], OrderController.prototype, "findAllByUserId", null);
 __decorate([
     (0, common_1.Get)(':id'),
     (0, swagger_1.ApiOperation)({ summary: 'Get an order by ID' }),

@@ -16,35 +16,35 @@ export declare class OrderController {
         }[];
         snackCombos: ({
             snackCombo: {
-                name: string;
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 price: number;
+                name: string;
             };
         } & {
             createdAt: Date;
             updatedAt: Date;
             orderId: string;
-            snackComboId: string;
             quantity: number;
+            snackComboId: string;
         })[];
     } & {
         id: string;
+        total: number;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        total: number;
     }>;
     findAll(): import("@prisma/client").Prisma.PrismaPromise<({
         user: {
-            email: string;
-            password: string;
-            name: string;
-            profileId: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
+            email: string;
+            password: string;
+            profileId: string;
         };
         tickets: {
             id: string;
@@ -57,37 +57,116 @@ export declare class OrderController {
         }[];
         snackCombos: ({
             snackCombo: {
-                name: string;
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 price: number;
+                name: string;
             };
         } & {
             createdAt: Date;
             updatedAt: Date;
             orderId: string;
-            snackComboId: string;
             quantity: number;
+            snackComboId: string;
         })[];
     } & {
         id: string;
+        total: number;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+    })[]>;
+    findAllByUserId(userId: string): import("@prisma/client").Prisma.PrismaPromise<({
+        user: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            name: string;
+            email: string;
+            password: string;
+            profileId: string;
+        };
+        tickets: ({
+            session: {
+                movie: {
+                    id: string;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    title: string;
+                    durationMinutes: number;
+                    synopsis: string;
+                    genreId: string;
+                };
+            } & {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                startTime: Date;
+                movieId: string;
+                roomId: string;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            price: number;
+            seat: string;
+            sessionId: string;
+            orderId: string | null;
+        })[];
+        snackCombos: ({
+            snackCombo: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                price: number;
+                name: string;
+            };
+        } & {
+            createdAt: Date;
+            updatedAt: Date;
+            orderId: string;
+            quantity: number;
+            snackComboId: string;
+        })[];
+    } & {
+        id: string;
         total: number;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
     })[]>;
     findOne(id: string): import("@prisma/client").Prisma.Prisma__OrderClient<({
         user: {
-            email: string;
-            password: string;
-            name: string;
-            profileId: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
+            email: string;
+            password: string;
+            profileId: string;
         };
-        tickets: {
+        tickets: ({
+            session: {
+                movie: {
+                    id: string;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    title: string;
+                    durationMinutes: number;
+                    synopsis: string;
+                    genreId: string;
+                };
+            } & {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                startTime: Date;
+                movieId: string;
+                roomId: string;
+            };
+        } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
@@ -95,41 +174,41 @@ export declare class OrderController {
             seat: string;
             sessionId: string;
             orderId: string | null;
-        }[];
+        })[];
         snackCombos: ({
             snackCombo: {
-                name: string;
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 price: number;
+                name: string;
             };
         } & {
             createdAt: Date;
             updatedAt: Date;
             orderId: string;
-            snackComboId: string;
             quantity: number;
+            snackComboId: string;
         })[];
     } & {
         id: string;
+        total: number;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        total: number;
     }) | null, null, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     update(id: string, updateOrderDto: UpdateOrderDto): import("@prisma/client").Prisma.Prisma__OrderClient<{
         id: string;
+        total: number;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        total: number;
     }, never, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     remove(id: string): Promise<{
         id: string;
+        total: number;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        total: number;
     }>;
 }

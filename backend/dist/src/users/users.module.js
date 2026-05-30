@@ -10,13 +10,21 @@ exports.UsersModule = void 0;
 const common_1 = require("@nestjs/common");
 const users_service_1 = require("./users.service");
 const users_controller_1 = require("./users.controller");
+const jwt_1 = require("@nestjs/jwt");
 const prisma_module_1 = require("../prisma/prisma.module");
 let UsersModule = class UsersModule {
 };
 exports.UsersModule = UsersModule;
 exports.UsersModule = UsersModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule],
+        imports: [
+            prisma_module_1.PrismaModule,
+            jwt_1.JwtModule.register({
+                global: true,
+                secret: 'MINHA_CHAVE_SECRETA_CINEGESTAO_2026',
+                signOptions: { expiresIn: '1d' },
+            }),
+        ],
         controllers: [users_controller_1.UsersController],
         providers: [users_service_1.UsersService],
     })

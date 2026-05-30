@@ -18,10 +18,13 @@ const users_service_1 = require("./users.service");
 const create_user_dto_1 = require("./dto/create-user.dto");
 const update_user_dto_1 = require("./dto/update-user.dto");
 const swagger_1 = require("@nestjs/swagger");
+const jwt_1 = require("@nestjs/jwt");
 let UsersController = class UsersController {
     usersService;
-    constructor(usersService) {
+    jwtService;
+    constructor(usersService, jwtService) {
         this.usersService = usersService;
+        this.jwtService = jwtService;
     }
     create(createUserDto) {
         return this.usersService.create(createUserDto);
@@ -32,7 +35,21 @@ let UsersController = class UsersController {
         if (!user) {
             throw new common_1.UnauthorizedException('Email ou senha incorretos!');
         }
-        return user;
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            role: user.profile?.name || 'USER'
+        };
+        const token = await this.jwtService.signAsync(payload);
+        return {
+            access_token: token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                profile: user.profile?.name
+            }
+        };
     }
     findAll() {
         return this.usersService.findAll();
@@ -60,7 +77,16 @@ __decorate([
 ], UsersController.prototype, "create", null);
 __decorate([
     (0, common_1.Post)('login'),
-    (0, swagger_1.ApiOperation)({ summary: 'Fazer login do usuário' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Fazer login e receber JWT' }),
+    (0, swagger_1.ApiBody)({
+        schema: {
+            type: 'object',
+            properties: {
+                email: { type: 'string', example: 'hugofmourao@gmail.com' },
+                password: { type: 'string', example: 'sua_senha_aqui' }
+            }
+        }
+    }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -101,6 +127,6 @@ __decorate([
 exports.UsersController = UsersController = __decorate([
     (0, swagger_1.ApiTags)('users'),
     (0, common_1.Controller)('users'),
-    __metadata("design:paramtypes", [users_service_1.UsersService])
+    __metadata("design:paramtypes", [users_service_1.UsersService, jwt_1.JwtService])
 ], UsersController);
 //# sourceMappingURL=users.controller.js.map
