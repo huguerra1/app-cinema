@@ -24,6 +24,13 @@ updates:
       # O TypeScript 7 ainda não é aceito pelo typescript-eslint 8 (o `npm ci` falha com ERESOLVE).
       - dependency-name: typescript
         update-types: [version-update:semver-major]
+      # O NestJS 12 é só ESM e os testes rodam no Jest em CommonJS: a migração está no ROADMAP
+      # (item 19). Remover esta regra quando for feita.
+      - dependency-name: '@nestjs/*'
+        update-types: [version-update:semver-major]
+      # Os tipos do Node acompanham a versão que roda (Node 22 no CI); subir junto com o runtime.
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
 
   # App mobile (Expo): as versões das bibliotecas precisam bater com o SDK do Expo, então a
   # atualização é feita de uma vez com `npx expo install --fix` (ver ROADMAP). Aqui ficam só
