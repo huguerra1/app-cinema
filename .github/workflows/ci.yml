@@ -89,8 +89,10 @@ jobs:
             curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:3000/api/ticket \
               -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
               -d "{\"sessionId\":\"$SESSION\",\"seat\":\"Z99\"}" >> /tmp/compras.txt &
+            PIDS="$PIDS $!"
           done
-          wait
+          # Espera só as compras (um `wait` sem argumentos esperaria também o servidor da API).
+          wait $PIDS
           sort /tmp/compras.txt | uniq -c
           test "$(grep -c '^201$' /tmp/compras.txt)" = "1"
           test "$(grep -c '^409$' /tmp/compras.txt)" = "4"
