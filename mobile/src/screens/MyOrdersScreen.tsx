@@ -37,9 +37,8 @@ export default class MyOrdersScreen extends Component<MyOrdersScreenProps, MyOrd
         return;
       }
 
-      // Agora o app bate na rota nova passando o ID na URL!
-      // (Se o seu controller for plural no backend, mude 'order' para 'orders')
-      const response = await api.get(`/order/user/${userId}`, {
+      // O backend identifica o usuário pelo token.
+      const response = await api.get('/order/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
       

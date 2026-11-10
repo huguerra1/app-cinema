@@ -1,9 +1,10 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 
@@ -11,17 +12,18 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 export class OrderService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createOrderDto: CreateOrderDto) {
-    const { userId, ticketIds = [], snackCombos = [] } = createOrderDto;
+  async create(createOrderDto: CreateOrderDto, userId: string) {
+    this.checkUserId(createOrderDto.userId, userId);
+    const { ticketIds = [], snackCombos = [] } = createOrderDto;
     let total = 0;
 
-    // Validate User
+    // Confirma a existência do usuário autenticado.
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException(`User with ID ${userId} not found.`);
     }
 
-    // Handle Tickets
+    // Calcula o total dos ingressos disponíveis.
     if (ticketIds.length > 0) {
       const tickets = await this.prisma.ticket.findMany({
         where: { id: { in: ticketIds } },
@@ -39,7 +41,7 @@ export class OrderService {
       }
     }
 
-    // Handle Snack Combos
+    // Calcula o total dos combos.
     if (snackCombos.length > 0) {
       const snackComboIds = snackCombos.map((s) => s.snackComboId);
       const foundSnacks = await this.prisma.snackCombo.findMany({
@@ -51,7 +53,9 @@ export class OrderService {
       for (const combo of snackCombos) {
         const snack = foundSnacks.find((s) => s.id === combo.snackComboId);
         if (!snack) {
-          throw new NotFoundException(`Snack combo ${combo.snackComboId} not found.`);
+          throw new NotFoundException(
+            `Snack combo ${combo.snackComboId} not found.`,
+          );
         }
         total += snack.price * combo.quantity;
       }
@@ -82,71 +86,79 @@ export class OrderService {
     return createdOrder;
   }
 
-  findAll() {
-    return this.prisma.order.findMany({
-      include: {
-        user: true,
-        tickets: true, // Aqui ele traz apenas a Cadeira e Preço
-        snackCombos: { include: { snackCombo: true } },
-      },
-    });
-  }
-  // Novo método para buscar apenas a lista de pedidos de um usuário específico
   findAllByUserId(userId: string) {
     return this.prisma.order.findMany({
-      where: { userId: userId }, // <-- O filtro que barra pedidos de outras pessoas
+      where: { userId },
       include: {
-        user: true,
         tickets: {
           include: {
             session: {
               include: {
-                movie: true // Aqui trazemos o nome do filme bonitão!
-              }
-            }
-          }
+                movie: true,
+              },
+            },
+          },
         },
         snackCombos: { include: { snackCombo: true } },
       },
     });
   }
 
-  findOne(id: string) {
-    return this.prisma.order.findUnique({
-      where: { id },
+  async findOne(id: string, userId: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { id, userId },
       include: {
-        user: true,
         tickets: {
           include: {
             session: {
               include: {
-                movie: true
-              }
-            }
-          }
+                movie: true,
+              },
+            },
+          },
         },
         snackCombos: { include: { snackCombo: true } },
       },
     });
+    if (!order) {
+      throw new NotFoundException('Pedido não encontrado.');
+    }
+    return order;
   }
 
-  // Updating an order's contents is complex and would require its own logic
-  // for adding/removing items and recalculating totals.
-  // This is a placeholder implementation.
-  update(id: string, updateOrderDto: UpdateOrderDto) {
+  private checkUserId(bodyUserId: string | undefined, userId: string) {
+    if (bodyUserId !== undefined && bodyUserId !== userId) {
+      throw new ForbiddenException(
+        'O pedido deve pertencer ao usuário autenticado.',
+      );
+    }
+  }
+
+  async update(id: string, updateOrderDto: UpdateOrderDto, userId: string) {
+    this.checkUserId(updateOrderDto.userId, userId);
+    await this.findOne(id, userId);
+    // Alterar itens exige recalcular o total e reservar ingressos em transação.
+    if (
+      updateOrderDto.ticketIds !== undefined ||
+      updateOrderDto.snackCombos !== undefined
+    ) {
+      throw new BadRequestException(
+        'A alteração de itens de um pedido ainda não é suportada.',
+      );
+    }
     return this.prisma.order.update({
-      where: { id },
-      data: updateOrderDto as any,
+      where: { id, userId },
+      data: { userId },
     });
   }
 
-  remove(id: string) {
-    // Must also remove related SnackCombosOnOrders due to relation
+  async remove(id: string, userId: string) {
+    await this.findOne(id, userId);
     return this.prisma.$transaction(async (tx) => {
       await tx.snackCombosOnOrders.deleteMany({
         where: { orderId: id },
       });
-      return tx.order.delete({ where: { id } });
+      return tx.order.delete({ where: { id, userId } });
     });
   }
 }
