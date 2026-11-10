@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "bootstrap": "^5.3.8",
-    "typescript": "^6.0.2",
+    "typescript": "^7.0.2",
     "vite": "^8.0.3"
   }
 }
