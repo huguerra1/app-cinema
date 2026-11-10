@@ -4,8 +4,6 @@ name: Capturas
 # as imagens saem como artefato "capturas".
 on:
   workflow_dispatch:
-  push:
-    branches: [claude/prints-painel]
 
 permissions:
   contents: read
