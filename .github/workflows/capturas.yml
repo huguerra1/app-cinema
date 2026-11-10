@@ -34,6 +34,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      # O repositório usa workspaces do npm: os dois `npm ci` reinstalam o node_modules da raiz, então
+      # tudo é instalado ANTES de subir a API (senão ela perde arquivos enquanto roda).
+      - name: Build do painel web
+        working-directory: frontend
+        run: |
+          npm ci
+          VITE_API_URL=http://localhost:3000/api npm run build
       - name: API com dados de exemplo
         working-directory: backend
         run: |
@@ -47,8 +54,6 @@ jobs:
       - name: Painel web
         working-directory: frontend
         run: |
-          npm ci
-          VITE_API_URL=http://localhost:3000/api npm run build
           nohup npx vite preview --port 4173 --strictPort > /tmp/web.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://localhost:4173/ > /dev/null && break; sleep 2; done
       - name: Prints
