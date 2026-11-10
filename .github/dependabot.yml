@@ -1,7 +1,10 @@
 version: 2
 updates:
+  # Backend e painel web são workspaces do npm: o CI instala pelo package-lock.json da raiz,
+  # então o Dependabot precisa atualizar a raiz (apontar para /backend ou /frontend deixava
+  # o lockfile da raiz desatualizado e quebrava o `npm ci`).
   - package-ecosystem: npm
-    directory: /backend
+    directory: /
     target-branch: dev
     schedule:
       interval: weekly
@@ -9,22 +12,17 @@ updates:
     groups:
       menores:
         update-types: [minor, patch]
-  - package-ecosystem: npm
-    directory: /frontend
-    target-branch: dev
-    schedule:
-      interval: weekly
-    groups:
-      menores:
-        update-types: [minor, patch]
+
+  # App mobile (Expo): as versões das bibliotecas precisam bater com o SDK do Expo, então a
+  # atualização é feita de uma vez com `npx expo install --fix` (ver ROADMAP). Aqui ficam só
+  # as atualizações de segurança (limite 0 desliga as de versão).
   - package-ecosystem: npm
     directory: /mobile
     target-branch: dev
     schedule:
       interval: weekly
-    groups:
-      menores:
-        update-types: [minor, patch]
+    open-pull-requests-limit: 0
+
   - package-ecosystem: github-actions
     directory: /
     target-branch: dev
