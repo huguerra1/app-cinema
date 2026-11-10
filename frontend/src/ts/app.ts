@@ -1,8 +1,5 @@
 import * as api from './apiService';
 
-// ==========================================
-// 1. ESTADO DE AUTENTICAÇÃO E ADMIN
-// ==========================================
 let isAdmin = false;
 let currentUser: any = null;
 try {
@@ -17,11 +14,10 @@ function updateAuthState() {
   const userNameDisplay = document.getElementById('user-name-display');
   const btnLogout = document.getElementById('btn-logout');
   const btnLoginNav = document.getElementById('btn-login-nav');
-  const btnToggleAdmin = document.getElementById('btn-toggle-admin'); // Pegamos o botão de admin
+  const btnToggleAdmin = document.getElementById('btn-toggle-admin');
   const pdvUsuarioNome = document.getElementById('pdv-usuario-nome') as HTMLInputElement;
 
   if (currentUser) {
-    // 1. Usuário Logado: Mostra info e Logout
     userInfo?.classList.remove('d-none');
     btnLogout?.classList.remove('d-none');
     btnLoginNav?.classList.add('d-none');
@@ -31,12 +27,10 @@ function updateAuthState() {
 
     // O backend também verifica o papel em todas as escritas do catálogo.
     if (currentUser.profile === 'ADMIN') {
-      btnToggleAdmin?.classList.remove('d-none'); // Mostra o botão se for Admin
+      btnToggleAdmin?.classList.remove('d-none');
     } else {
-      btnToggleAdmin?.classList.add('d-none');    // Esconde se for User comum
+      btnToggleAdmin?.classList.add('d-none');
       
-      // Se ele era Admin, deslogou e entrou como User, 
-      // precisamos garantir que o Modo Admin seja desligado
       isAdmin = false;
       const adminElements = document.querySelectorAll('.admin-only');
       adminElements.forEach(el => el.classList.add('d-none'));
@@ -45,16 +39,14 @@ function updateAuthState() {
   } else {
     isAdmin = false;
     document.querySelectorAll('.admin-only').forEach(el => el.classList.add('d-none'));
-    // 2. Deslogado: Esconde tudo e mostra Login
     userInfo?.classList.add('d-none');
     btnLogout?.classList.add('d-none');
-    btnToggleAdmin?.classList.add('d-none'); // Esconde o botão admin se deslogado
+    btnToggleAdmin?.classList.add('d-none');
     btnLoginNav?.classList.remove('d-none');
     if (pdvUsuarioNome) pdvUsuarioNome.value = '⚠️ Faça login primeiro para comprar!';
   }
 }
 
-// Logout
 document.getElementById('btn-logout')?.addEventListener('click', () => {
   api.clearToken();
   localStorage.removeItem('cine_user');
@@ -71,7 +63,6 @@ window.addEventListener('auth-expired', () => {
   document.querySelector('.nav-link[data-target="view-login"]')?.dispatchEvent(new Event('click'));
 });
 
-// Alterna o modo administrativo.
 const btnToggleAdmin = document.getElementById('btn-toggle-admin');
 const adminElements = document.querySelectorAll('.admin-only');
 btnToggleAdmin?.addEventListener('click', () => {
@@ -86,13 +77,12 @@ btnToggleAdmin?.addEventListener('click', () => {
   document.querySelector('.nav-link[data-target="view-sessoes"]')?.dispatchEvent(new Event('click'));
 });
 
-// Navegação (SPA)
 const navLinks = document.querySelectorAll('.nav-link[data-target]');
 const viewSections = document.querySelectorAll('.view-section');
 navLinks.forEach(link => {
   link.addEventListener('click', (e) => {
     e.preventDefault();
-    const target = e.currentTarget as HTMLElement; // Correção para pegar o elemento que tem o data-target
+    const target = e.currentTarget as HTMLElement;
     const targetId = target.getAttribute('data-target');
     
     if(target.classList.contains('fw-bold') || target.classList.contains('nav-link')) {
@@ -134,9 +124,6 @@ function populateSelect(selectElement: HTMLSelectElement, data: any[], labelFiel
   });
 }
 
-// ==========================================
-// 2. CARREGAR DADOS DA API
-// ==========================================
 async function loadDashboard() {
   try {
     const [filmes, sessoes, salas, lanches, generos] = await Promise.all([
@@ -171,11 +158,7 @@ async function loadDashboard() {
   } catch (error: any) { showAlert('Erro ao carregar: ' + error.message, 'danger'); }
 }
 
-// ==========================================
-// 3. EVENTOS: AUTH E CADASTROS
-// ==========================================
 
-// Cadastro de Usuário
 document.getElementById('form-cadastro')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   try {
@@ -190,7 +173,6 @@ document.getElementById('form-cadastro')?.addEventListener('submit', async (e) =
   } catch (err: any) { showAlert('Erro: ' + err.message, 'danger'); }
 });
 
-// Login
 document.getElementById('form-login')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   try {
@@ -210,14 +192,12 @@ document.getElementById('form-login')?.addEventListener('submit', async (e) => {
   } catch (err: any) { showAlert('Falha no login: ' + err.message, 'danger'); }
 });
 
-// Admin: Cadastros Básicos
 document.getElementById('form-filme')?.addEventListener('submit', async (e) => { e.preventDefault(); try { const g = (document.getElementById('filme-genero') as HTMLSelectElement).value; if(!g) return showAlert('Selecione um Gênero!','warning'); await api.createFilme({ title: (document.getElementById('filme-titulo') as HTMLInputElement).value, durationMinutes: parseInt((document.getElementById('filme-duracao') as HTMLInputElement).value), synopsis: (document.getElementById('filme-sinopse') as HTMLInputElement).value, genreId: g }); showAlert('Filme salvo!', 'success'); (e.target as HTMLFormElement).reset(); loadDashboard(); } catch (err: any) { showAlert('Erro: ' + err.message, 'danger'); } });
 document.getElementById('form-sala')?.addEventListener('submit', async (e) => { e.preventDefault(); try { await api.createSala({ name: (document.getElementById('sala-nome') as HTMLInputElement).value, capacity: parseInt((document.getElementById('sala-capacidade') as HTMLInputElement).value) }); showAlert('Sala salva!', 'success'); (e.target as HTMLFormElement).reset(); loadDashboard(); } catch (err: any) { showAlert(err.message, 'danger'); } });
 document.getElementById('sessao-form')?.addEventListener('submit', async (e) => { e.preventDefault(); try { await api.createSessao({ startTime: new Date((document.getElementById('horario-inicio') as HTMLInputElement).value).toISOString(), movieId: (document.getElementById('filme-select') as HTMLSelectElement).value, roomId: (document.getElementById('sala-select') as HTMLSelectElement).value, price: Number((document.getElementById('sessao-preco') as HTMLInputElement).value) }); showAlert('Sessão agendada!', 'success'); (e.target as HTMLFormElement).reset(); loadDashboard(); } catch (err: any) { showAlert(err.message, 'danger'); } });
 document.getElementById('form-lanche')?.addEventListener('submit', async (e) => { e.preventDefault(); try { await api.createLanche({ name: (document.getElementById('lanche-nome') as HTMLInputElement).value, price: parseFloat((document.getElementById('lanche-preco') as HTMLInputElement).value) }); showAlert('Combo adicionado!', 'success'); (e.target as HTMLFormElement).reset(); loadDashboard(); } catch (err: any) { showAlert(err.message, 'danger'); } });
 document.getElementById('form-genero')?.addEventListener('submit', async (e) => { e.preventDefault(); try { await api.createGenero({ name: (document.getElementById('genero-nome') as HTMLInputElement).value }); showAlert('Gênero salvo!', 'success'); (e.target as HTMLFormElement).reset(); loadDashboard(); } catch (err: any) { showAlert(err.message, 'danger'); } });
 
-// PDV: Finalizar Compra
 document.getElementById('form-pedido')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!currentUser) return showAlert('⚠️ Você precisa fazer login antes de comprar!', 'danger');

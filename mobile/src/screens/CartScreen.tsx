@@ -11,7 +11,7 @@ interface CartScreenProps {
 interface CartState {
   itens: any[];
   total: number;
-  loadingCompra: boolean; // Controla o botão de pagamento
+  loadingCompra: boolean;
 }
 
 export default class CartScreen extends Component<CartScreenProps, CartState> {
@@ -62,14 +62,11 @@ export default class CartScreen extends Component<CartScreenProps, CartState> {
 
     try {
       const token = await AsyncStorage.getItem('@jwt_token');
-      // Tenta pegar o ID do usuário logado (explicado logo abaixo!)
       const userId = await AsyncStorage.getItem('@user_id'); 
 
-      // 1. Separa o que é ingresso e o que é lanche
       const ingressosTemporarios = itens.filter(item => item.tipo === 'ingresso');
       const lanchesTemporarios = itens.filter(item => item.tipo === 'lanche');
 
-      // 2. Cria os ingressos reais no banco para pegar os IDs gerados
       const ticketIdsRealizados: string[] = [];
       
       for (const ingresso of ingressosTemporarios) {
@@ -85,41 +82,34 @@ export default class CartScreen extends Component<CartScreenProps, CartState> {
     const mapaLanches = new Map();
       
       lanchesTemporarios.forEach(lanche => {
-        // Se o lanche já existe no mapa, apenas soma a quantidade nova com a que já estava lá
         if (mapaLanches.has(lanche.snackComboId)) {
           const quantidadeAtual = mapaLanches.get(lanche.snackComboId);
           mapaLanches.set(lanche.snackComboId, quantidadeAtual + lanche.quantity);
         } else {
-          // Se não existe ainda, adiciona pela primeira vez
           mapaLanches.set(lanche.snackComboId, lanche.quantity);
         }
       });
 
-      // Transforma o Mapa de volta em um Array do jeito que o NestJS exige
       const snackCombosFormatados = Array.from(mapaLanches, ([snackComboId, quantity]) => ({
         snackComboId,
         quantity
       }));
 
-      // 4. Monta o pacote final do Pedido
       const payloadOrder = {
         userId: userId,
         ticketIds: ticketIdsRealizados,
         snackCombos: snackCombosFormatados
       };
 
-      // 5. Envia o pedido definitivo
       await api.post('/order', payloadOrder, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // 6. Limpa o carrinho e comemora
       await AsyncStorage.removeItem('@carrinho');
       this.setState({ itens: [], total: 0, loadingCompra: false });
 
       Alert.alert('Sucesso! 🎉', 'Pagamento aprovado e pedido realizado!');
       
-      // Redireciona o usuário para a tela de Meus Pedidos
       this.props.navigation.navigate('MyOrders');
 
     } catch (error: any) {

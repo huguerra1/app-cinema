@@ -20,7 +20,7 @@ export default class BuyTicketScreen extends Component<BuyTicketScreenProps, Buy
     super(props);
     this.state = {
       sessoes: [],
-      sessaoSelecionada: null, // Guarda o ID da sessão que o usuário clicar
+      sessaoSelecionada: null,
       loadingDados: true,
       loadingCompra: false,
     };
@@ -33,7 +33,6 @@ export default class BuyTicketScreen extends Component<BuyTicketScreenProps, Buy
   carregarSessoes = async () => {
     try {
       const token = await AsyncStorage.getItem('@jwt_token');
-      // Bate na rota de sessões do seu NestJS
       const response = await api.get('/session', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -57,7 +56,6 @@ export default class BuyTicketScreen extends Component<BuyTicketScreenProps, Buy
     this.setState({ loadingCompra: true });
 
     try {
-      // 1. Encontra os detalhes visuais da sessão que o usuário clicou para mostrar no carrinho
       const sessaoCompleta = sessoes.find(s => s.id === sessaoSelecionada);
       
       const fileira = ['A', 'B', 'C', 'D', 'E'][Math.floor(Math.random() * 5)];
@@ -65,9 +63,8 @@ export default class BuyTicketScreen extends Component<BuyTicketScreenProps, Buy
       const cadeira = `${fileira}${numero}`;
       const precoSessao = Number(sessaoCompleta.price);
 
-      // 2. Monta o objeto do Item do Carrinho
       const novoItemCarrinho = {
-        idTemp: Math.random().toString(36).substring(7), // ID temporário pro React listar
+        idTemp: Math.random().toString(36).substring(7),
         tipo: 'ingresso',
         sessionId: sessaoSelecionada,
         seat: cadeira,
@@ -76,18 +73,15 @@ export default class BuyTicketScreen extends Component<BuyTicketScreenProps, Buy
         detalheVisual: `Sala: ${sessaoCompleta?.room?.name || '?'} | Cadeira: ${cadeira}`,
       };
 
-      // 3. Puxa o carrinho atual da memória (se existir)
       const carrinhoSalvo = await AsyncStorage.getItem('@carrinho');
       let carrinho = carrinhoSalvo ? JSON.parse(carrinhoSalvo) : [];
 
-      // 4. Adiciona o novo ingresso e salva de volta
       carrinho.push(novoItemCarrinho);
       await AsyncStorage.setItem('@carrinho', JSON.stringify(carrinho));
 
       this.setState({ loadingCompra: false });
       Alert.alert('Adicionado!', 'Ingresso colocado no carrinho com sucesso!');
       
-      // Volta para o Menu
       this.props.navigation.goBack();
 
     } catch (error) {
@@ -97,7 +91,6 @@ export default class BuyTicketScreen extends Component<BuyTicketScreenProps, Buy
     }
   }
 
-  // Função para formatar a data que vem do Prisma de um jeito bonito
   formatarData = (dataString: string) => {
     const data = new Date(dataString);
     return data.toLocaleString('pt-BR', { 
@@ -127,7 +120,6 @@ export default class BuyTicketScreen extends Component<BuyTicketScreenProps, Buy
           ) : sessoes.length === 0 ? (
             <Text style={styles.emptyText}>Nenhuma sessão disponível hoje.</Text>
           ) : (
-            // Desenha a lista de sessões vindas do backend
             sessoes.map((sessao) => (
               <TouchableOpacity 
                 key={sessao.id}
@@ -187,7 +179,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sessionCardActive: {
-    borderColor: '#4CAF50', // Fica verde quando selecionado
+    borderColor: '#4CAF50',
     backgroundColor: '#38423b',
   },
   movieName: { color: '#FFF', fontSize: 18, fontWeight: 'bold', marginBottom: 5 },

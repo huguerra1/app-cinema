@@ -31,7 +31,6 @@ export default class RegisterScreen extends Component<RegisterScreenProps, Regis
       return;
     }
 
-    // 1. RASTREADOR: Imprime a URL que o Axios montou
     console.log('\n--- INICIANDO REQUISIÇÃO ---');
     console.log('🔗 URL Base do Axios:', api.defaults.baseURL);
     console.log('📤 Dados enviados:', { name: nome, email, password: senha });
@@ -48,7 +47,6 @@ export default class RegisterScreen extends Component<RegisterScreenProps, Regis
       this.props.navigation.navigate('Login');
 
     } catch (error: any) {
-      // 2. RASTREADOR: Desmonta o erro escondido do Axios
       console.log('❌ FALHA NA REQUISIÇÃO!');
       
       if (error.response) {
@@ -69,7 +67,6 @@ export default class RegisterScreen extends Component<RegisterScreenProps, Regis
       <View style={styles.container}>
         <Header title="Nova Conta" />
 
-        {/* Usamos ScrollView caso a tela do celular seja pequena e o teclado cubra os botões */}
         <ScrollView contentContainerStyle={styles.body}>
           
           <View style={styles.iconContainer}>
@@ -124,7 +121,6 @@ export default class RegisterScreen extends Component<RegisterScreenProps, Regis
   }
 }
 
-// Mesma paleta de cores elegante
 const styles = StyleSheet.create({
   container: {
     flex: 1,
