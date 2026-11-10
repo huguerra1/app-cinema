@@ -66,7 +66,6 @@ export default class CatalogScreen extends Component<CatalogScreenProps, Catalog
         <Header title="Catálogo" />
 
         <View style={styles.body}>
-          {/* NOVO: Botão de voltar para o Menu */}
           <TouchableOpacity 
             style={styles.backBtn} 
             onPress={() => this.props.navigation.goBack()}
@@ -94,7 +93,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#1E1A24' },
   body: { flex: 1, padding: 20 },
   
-  // Estilo do novo botão de voltar
   backBtn: {
     backgroundColor: '#30293B',
     padding: 12,

@@ -1,18 +1,20 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { PrismaService } from './prisma.service';
+import { createPrismaMock } from './prisma.mock';
 
 describe('PrismaService', () => {
-  let service: PrismaService;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [PrismaService],
+  it('permite substituir o cliente por um mock sem conexão com o banco', async () => {
+    const prisma = createPrismaMock();
+    const module = await Test.createTestingModule({
+      providers: [{ provide: PrismaService, useValue: prisma }],
     }).compile();
-
-    service = module.get<PrismaService>(PrismaService);
+    expect(module.get(PrismaService)).toBe(prisma);
+    expect(prisma.$connect).not.toHaveBeenCalled();
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  it('chama a conexão no ciclo de inicialização', async () => {
+    const prisma = createPrismaMock();
+    await PrismaService.prototype.onModuleInit.call(prisma);
+    expect(prisma.$connect).toHaveBeenCalledTimes(1);
   });
 });

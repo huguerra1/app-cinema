@@ -22,7 +22,7 @@ export default class SnacksScreen extends Component<SnacksScreenProps, SnacksSta
     this.state = {
       combos: [],
       comboSelecionado: null,
-      quantidade: 1, // Começa sempre com 1
+      quantidade: 1,
       loadingDados: true,
       loadingAdd: false,
     };
@@ -35,7 +35,6 @@ export default class SnacksScreen extends Component<SnacksScreenProps, SnacksSta
   carregarCombos = async () => {
     try {
       const token = await AsyncStorage.getItem('@jwt_token');
-      // Tenta buscar na rota (pode ser /snack-combos, /snacks ou /combos dependendo do seu NestJS)
       const response = await api.get('/snack-combo', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -65,13 +64,11 @@ export default class SnacksScreen extends Component<SnacksScreenProps, SnacksSta
     this.setState({ loadingAdd: true });
 
     try {
-      // 1. Calcula o preço total deste item (Preço do Combo x Quantidade)
       const precoTotal = comboSelecionado.price * quantidade;
 
-      // 2. Monta o objeto do Item do Carrinho no mesmo padrão dos Ingressos
       const novoItemCarrinho = {
         idTemp: Math.random().toString(36).substring(7),
-        tipo: 'lanche', // Identificador essencial para o backend depois
+        tipo: 'lanche',
         snackComboId: comboSelecionado.id,
         quantity: quantidade,
         price: precoTotal, 
@@ -79,7 +76,6 @@ export default class SnacksScreen extends Component<SnacksScreenProps, SnacksSta
         detalheVisual: `Quantidade: ${quantidade}x | Valor Unitário: R$ ${comboSelecionado.price.toFixed(2)}`,
       };
 
-      // 3. Puxa o carrinho e adiciona
       const carrinhoSalvo = await AsyncStorage.getItem('@carrinho');
       let carrinho = carrinhoSalvo ? JSON.parse(carrinhoSalvo) : [];
 
@@ -138,7 +134,6 @@ export default class SnacksScreen extends Component<SnacksScreenProps, SnacksSta
             />
           )}
 
-          {/* Só mostra os controles de quantidade se um combo for selecionado */}
           {comboSelecionado && (
             <View style={styles.actionContainer}>
               <Text style={styles.selectionLabel}>Quantidade:</Text>
@@ -181,7 +176,7 @@ const styles = StyleSheet.create({
   emptyText: { color: '#A395B8', textAlign: 'center', fontStyle: 'italic', marginBottom: 20 },
   
   snackCard: { backgroundColor: '#30293B', padding: 20, borderRadius: 10, borderWidth: 2, borderColor: '#4A3E5C', marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  snackCardActive: { borderColor: '#E5A93C', backgroundColor: '#423625' }, // Amarelo/Dourado para a comida
+  snackCardActive: { borderColor: '#E5A93C', backgroundColor: '#423625' },
   snackName: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
   snackPrice: { color: '#4CAF50', fontSize: 18, fontWeight: 'bold' },
   

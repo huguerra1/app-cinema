@@ -31,19 +31,16 @@ export default class LoginScreen extends Component<LoginScreenProps, LoginState>
     }
 
     try {
-      // Dispara a requisição usando a nossa configuração do api.ts
       const response = await api.post('/users/login', {
         email: email,
         password: senha
       });
 
-      // Salva o JWT no cofre do celular
       const token = response.data.access_token;
       await AsyncStorage.setItem('@jwt_token', token);
       await AsyncStorage.setItem('@user_id', response.data.user.id);
       
       
-      // Redireciona para a Home e impede de voltar para o Login pelo botão de voltar
       this.props.navigation.replace('Home');
 
     } catch (error: any) {

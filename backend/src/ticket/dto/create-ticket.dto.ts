@@ -1,28 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsNotEmpty,
-  IsNumber,
   IsOptional,
-  IsPositive,
   IsString,
   IsUUID,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateTicketDto {
-  @ApiProperty({
-    description: 'The price of the ticket.',
-    example: 15.5,
-  })
-  @IsNumber()
-  @IsPositive()
-  price: number;
-
   @ApiProperty({
     description: 'The seat identifier.',
     example: 'F12',
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(20)
   seat: string;
 
   @ApiProperty({

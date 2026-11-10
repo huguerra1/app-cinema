@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 
@@ -17,18 +17,24 @@ export class RoomService {
     return this.prisma.room.findMany();
   }
 
-  findOne(id: string) {
-    return this.prisma.room.findUnique({ where: { id } });
+  async findOne(id: string) {
+    const result = await this.prisma.room.findUnique({ where: { id } });
+    if (!result) {
+      throw new NotFoundException('Sala não encontrada.');
+    }
+    return result;
   }
 
-  update(id: string, updateRoomDto: UpdateRoomDto) {
+  async update(id: string, updateRoomDto: UpdateRoomDto) {
+    await this.findOne(id);
     return this.prisma.room.update({
       where: { id },
       data: updateRoomDto,
     });
   }
 
-  remove(id: string) {
+  async remove(id: string) {
+    await this.findOne(id);
     return this.prisma.room.delete({ where: { id } });
   }
 }

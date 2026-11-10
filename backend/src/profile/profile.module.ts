@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { ProfileController } from './profile.controller';
-import { PrismaModule } from '../prisma/prisma.module'; // <-- Adicione esta linha
+import { PrismaModule } from '../prisma/prisma.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [PrismaModule], // <-- Adicione o PrismaModule aqui
+  imports: [PrismaModule, AuthModule],
   controllers: [ProfileController],
   providers: [ProfileService],
 })

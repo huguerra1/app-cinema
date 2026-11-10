@@ -1,12 +1,27 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsDateString, IsUUID } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsDateString,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateSessionDto {
+  @ApiPropertyOptional({
+    description: 'Preço do ingresso da sessão.',
+    default: 25,
+  })
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  price?: number;
+
   @ApiProperty({
     description: 'The start time of the session in ISO 8601 format.',
     example: '2026-04-01T20:00:00.000Z',
   })
-  @IsDateString()
+  @IsDateString({ strict: true })
   startTime: string;
 
   @ApiProperty({

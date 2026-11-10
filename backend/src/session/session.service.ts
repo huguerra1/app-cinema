@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { addMinutes } from 'date-fns';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 
@@ -13,7 +13,7 @@ export class SessionService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createSessionDto: CreateSessionDto) {
-    const { startTime, movieId, roomId } = createSessionDto;
+    const { startTime, movieId, roomId, price } = createSessionDto;
 
     const movie = await this.prisma.movie.findUnique({
       where: { id: movieId },
@@ -37,7 +37,7 @@ export class SessionService {
         session.movie.durationMinutes,
       );
 
-      // Check for overlap: (StartA < EndB) and (StartB < EndA)
+      // Há sobreposição quando o início de cada sessão precede o fim da outra.
       if (newStartTime < existingEndTime && existingStartTime < newEndTime) {
         throw new ConflictException(
           'Session time conflicts with an existing session.',
@@ -50,29 +50,38 @@ export class SessionService {
         startTime: newStartTime,
         movieId,
         roomId,
+        price,
       },
     });
   }
 
   findAll() {
-    return this.prisma.session.findMany({ include: { movie: true, room: true } });
-  }
-
-  findOne(id: string) {
-    return this.prisma.session.findUnique({
-      where: { id },
+    return this.prisma.session.findMany({
       include: { movie: true, room: true },
     });
   }
 
-  update(id: string, updateSessionDto: UpdateSessionDto) {
+  async findOne(id: string) {
+    const result = await this.prisma.session.findUnique({
+      where: { id },
+      include: { movie: true, room: true },
+    });
+    if (!result) {
+      throw new NotFoundException('Sessão não encontrada.');
+    }
+    return result;
+  }
+
+  async update(id: string, updateSessionDto: UpdateSessionDto) {
+    await this.findOne(id);
     return this.prisma.session.update({
       where: { id },
       data: updateSessionDto,
     });
   }
 
-  remove(id: string) {
+  async remove(id: string) {
+    await this.findOne(id);
     return this.prisma.session.delete({ where: { id } });
   }
 }

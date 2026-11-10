@@ -3,8 +3,10 @@ import { SnackComboService } from './snack-combo.service';
 import { SnackComboController } from './snack-combo.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 
+import { AuthModule } from '../auth/auth.module';
+
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AuthModule],
   controllers: [SnackComboController],
   providers: [SnackComboService],
 })
