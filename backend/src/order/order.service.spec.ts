@@ -1,4 +1,8 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { OrderService } from './order.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -34,6 +38,15 @@ describe('OrderService', () => {
     ]);
     prisma.snackCombo.findMany.mockResolvedValue([{ id: 'combo', price: 10 }]);
     prisma.order.create.mockResolvedValue({ id: 'pedido', userId, total: 35 });
+    prisma.ticket.updateMany.mockResolvedValue({ count: 1 });
+    const order = {
+      id: 'pedido',
+      userId,
+      total: 35,
+      tickets: [{ id: 'ingresso', price: 15, orderId: 'pedido' }],
+      snackCombos: [{ quantity: 2, snackCombo: { id: 'combo', price: 10 } }],
+    };
+    prisma.order.findUniqueOrThrow.mockResolvedValue(order);
     await expect(
       service.create(
         {
@@ -42,7 +55,8 @@ describe('OrderService', () => {
         },
         userId,
       ),
-    ).resolves.toEqual({ id: 'pedido', userId, total: 35 });
+    ).resolves.toEqual(order);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(prisma.user.findUnique).toHaveBeenCalledWith({
       where: { id: userId },
     });
@@ -51,6 +65,32 @@ describe('OrderService', () => {
         data: expect.objectContaining({ userId, total: 35 }) as unknown,
       }),
     );
+    expect(prisma.ticket.updateMany).toHaveBeenCalledWith({
+      where: { id: 'ingresso', orderId: null },
+      data: { orderId: 'pedido' },
+    });
+    expect(prisma.order.create.mock.calls[0]).toEqual([
+      {
+        data: {
+          userId,
+          total: 35,
+          snackCombos: {
+            create: [{ quantity: 2, snackCombo: { connect: { id: 'combo' } } }],
+          },
+        },
+        include: {
+          tickets: true,
+          snackCombos: { include: { snackCombo: true } },
+        },
+      },
+    ]);
+    expect(prisma.order.findUniqueOrThrow).toHaveBeenCalledWith({
+      where: { id: 'pedido' },
+      include: {
+        tickets: true,
+        snackCombos: { include: { snackCombo: true } },
+      },
+    });
   });
 
   it.each([userId, otherId])(
@@ -73,7 +113,89 @@ describe('OrderService', () => {
     ]);
     await expect(
       service.create({ ticketIds: ['ingresso'] }, userId),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toMatchObject({ status: 409 });
+    expect(prisma.order.create).not.toHaveBeenCalled();
+    expect(prisma.ticket.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('aborta toda a transação se um ingresso for usado após a leitura', async () => {
+    const tx = createPrismaMock();
+    const persisted = {
+      orders: [] as string[],
+      combos: [] as string[],
+      ticketOrders: { primeiro: null, segundo: 'outro-pedido' } as Record<
+        string,
+        string | null
+      >,
+    };
+    const pending = {
+      orders: [...persisted.orders],
+      combos: [...persisted.combos],
+      ticketOrders: { ...persisted.ticketOrders },
+    };
+    // Este mock só confirma as escritas se o callback terminar sem exceção.
+    prisma.$transaction.mockImplementation(
+      async (callback: (client: typeof tx) => Promise<unknown>) => {
+        const result = await callback(tx);
+        Object.assign(persisted, pending);
+        return result;
+      },
+    );
+    tx.user.findUnique.mockResolvedValue({ id: userId });
+    tx.ticket.findMany.mockResolvedValue([
+      { id: 'primeiro', price: 15, orderId: null },
+      { id: 'segundo', price: 20, orderId: null },
+    ]);
+    tx.snackCombo.findMany.mockResolvedValue([{ id: 'combo', price: 10 }]);
+    tx.order.create.mockImplementation(() => {
+      pending.orders.push('pedido');
+      pending.combos.push('combo');
+      return Promise.resolve({ id: 'pedido', userId, total: 45 });
+    });
+    tx.ticket.updateMany.mockImplementation(
+      ({
+        where,
+        data,
+      }: {
+        where: { id: string };
+        data: { orderId: string };
+      }) => {
+        if (pending.ticketOrders[where.id] !== null) {
+          return Promise.resolve({ count: 0 });
+        }
+        pending.ticketOrders[where.id] = data.orderId;
+        return Promise.resolve({ count: 1 });
+      },
+    );
+
+    await expect(
+      service.create(
+        {
+          ticketIds: ['segundo', 'primeiro'],
+          snackCombos: [{ snackComboId: 'combo', quantity: 1 }],
+        },
+        userId,
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(tx.ticket.updateMany).toHaveBeenNthCalledWith(1, {
+      where: { id: 'primeiro', orderId: null },
+      data: { orderId: 'pedido' },
+    });
+    expect(tx.ticket.updateMany).toHaveBeenNthCalledWith(2, {
+      where: { id: 'segundo', orderId: null },
+      data: { orderId: 'pedido' },
+    });
+    expect(pending.ticketOrders.primeiro).toBe('pedido');
+    expect(persisted).toEqual({
+      orders: [],
+      combos: [],
+      ticketOrders: { primeiro: null, segundo: 'outro-pedido' },
+    });
+    expect(tx.order.findUniqueOrThrow).not.toHaveBeenCalled();
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.ticket.findMany).not.toHaveBeenCalled();
+    expect(prisma.snackCombo.findMany).not.toHaveBeenCalled();
     expect(prisma.order.create).not.toHaveBeenCalled();
   });
 

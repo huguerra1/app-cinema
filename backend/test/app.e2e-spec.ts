@@ -6,6 +6,7 @@ import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { createPrismaMock } from '../src/prisma/prisma.mock';
 import { JwtService } from '@nestjs/jwt';
+import { Prisma } from '@prisma/client';
 
 describe('App (HTTP, sem banco)', () => {
   let app: INestApplication<Server>;
@@ -270,7 +271,6 @@ describe('App (HTTP, sem banco)', () => {
       data: {
         userId,
         total: 20,
-        tickets: { connect: [] },
         snackCombos: {
           create: [
             { quantity: 2, snackCombo: { connect: { id: resourceId } } },
@@ -326,6 +326,66 @@ describe('App (HTTP, sem banco)', () => {
       });
     },
   );
+
+  it('POST /ticket retorna 409 para P2002 do banco', async () => {
+    const token = await jwt.signAsync({ sub: userId, role: 'USER' });
+    prisma.session.findUnique.mockResolvedValueOnce({
+      price: 25,
+      room: { capacity: 10 },
+    });
+    prisma.ticket.count.mockResolvedValueOnce(1);
+    prisma.ticket.create.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('Restrição única violada', {
+        code: 'P2002',
+        clientVersion: '7.5.0',
+      }),
+    );
+    const response = await request(app.getHttpServer())
+      .post('/api/ticket')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ sessionId: resourceId, seat: 'A1' })
+      .expect(409);
+    expect(response.body).toMatchObject({ message: 'assento já ocupado' });
+  });
+
+  it('POST /ticket retorna 409 sem inserir quando a sessão está lotada', async () => {
+    const token = await jwt.signAsync({ sub: userId, role: 'USER' });
+    prisma.session.findUnique.mockResolvedValueOnce({
+      price: 25,
+      room: { capacity: 1 },
+    });
+    prisma.ticket.count.mockResolvedValueOnce(1);
+    await request(app.getHttpServer())
+      .post('/api/ticket')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ sessionId: resourceId, seat: 'A2' })
+      .expect(409);
+    expect(prisma.ticket.create).not.toHaveBeenCalled();
+  });
+
+  it('POST /order retorna 409 se o ingresso for vinculado por outra compra', async () => {
+    const token = await jwt.signAsync({ sub: userId, role: 'USER' });
+    prisma.user.findUnique.mockResolvedValueOnce({ id: userId });
+    prisma.ticket.findMany.mockResolvedValueOnce([
+      { id: resourceId, price: 25, orderId: null },
+    ]);
+    prisma.order.create.mockResolvedValueOnce({
+      id: 'pedido',
+      userId,
+      total: 25,
+    });
+    prisma.ticket.updateMany.mockResolvedValueOnce({ count: 0 });
+    await request(app.getHttpServer())
+      .post('/api/order')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ ticketIds: [resourceId] })
+      .expect(409);
+    expect(prisma.ticket.updateMany).toHaveBeenCalledWith({
+      where: { id: resourceId, orderId: null },
+      data: { orderId: 'pedido' },
+    });
+    expect(prisma.order.findUniqueOrThrow).not.toHaveBeenCalled();
+  });
 
   it('admin define preço na criação e edição de sessão', async () => {
     const token = await jwt.signAsync({ sub: userId, role: 'ADMIN' });

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,75 +14,98 @@ export class OrderService {
 
   async create(createOrderDto: CreateOrderDto, userId: string) {
     const { ticketIds = [], snackCombos = [] } = createOrderDto;
-    let total = 0;
+    return this.prisma.$transaction(async (tx) => {
+      let total = 0;
 
-    // Confirma a existência do usuário autenticado.
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found.`);
-    }
-
-    // Calcula o total dos ingressos disponíveis.
-    if (ticketIds.length > 0) {
-      const tickets = await this.prisma.ticket.findMany({
-        where: { id: { in: ticketIds } },
-      });
-      if (tickets.length !== ticketIds.length) {
-        throw new NotFoundException('One or more tickets were not found.');
+      // Confirma a existência do usuário autenticado.
+      const user = await tx.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        throw new NotFoundException(`User with ID ${userId} not found.`);
       }
-      for (const ticket of tickets) {
-        if (ticket.orderId) {
-          throw new BadRequestException(
-            `Ticket ${ticket.id} is already part of an order.`,
-          );
+
+      // Calcula o total dos ingressos disponíveis.
+      if (ticketIds.length > 0) {
+        const tickets = await tx.ticket.findMany({
+          where: { id: { in: ticketIds } },
+        });
+        if (tickets.length !== ticketIds.length) {
+          throw new NotFoundException('One or more tickets were not found.');
         }
-        total += ticket.price;
+        for (const ticket of tickets) {
+          if (ticket.orderId) {
+            throw new ConflictException(
+              `Ticket ${ticket.id} is already part of an order.`,
+            );
+          }
+          total += ticket.price;
+        }
       }
-    }
 
-    // Calcula o total dos combos.
-    if (snackCombos.length > 0) {
-      const snackComboIds = snackCombos.map((s) => s.snackComboId);
-      const foundSnacks = await this.prisma.snackCombo.findMany({
-        where: { id: { in: snackComboIds } },
-      });
-      if (foundSnacks.length !== snackComboIds.length) {
-        throw new NotFoundException('One or more snack combos were not found.');
-      }
-      for (const combo of snackCombos) {
-        const snack = foundSnacks.find((s) => s.id === combo.snackComboId);
-        if (!snack) {
+      // Calcula o total dos combos.
+      if (snackCombos.length > 0) {
+        const snackComboIds = snackCombos.map((s) => s.snackComboId);
+        const foundSnacks = await tx.snackCombo.findMany({
+          where: { id: { in: snackComboIds } },
+        });
+        if (foundSnacks.length !== snackComboIds.length) {
           throw new NotFoundException(
-            `Snack combo ${combo.snackComboId} not found.`,
+            'One or more snack combos were not found.',
           );
         }
-        total += snack.price * combo.quantity;
+        for (const combo of snackCombos) {
+          const snack = foundSnacks.find((s) => s.id === combo.snackComboId);
+          if (!snack) {
+            throw new NotFoundException(
+              `Snack combo ${combo.snackComboId} not found.`,
+            );
+          }
+          total += snack.price * combo.quantity;
+        }
       }
-    }
 
-    const createdOrder = await this.prisma.order.create({
-      data: {
-        total,
-        userId,
-        tickets: {
-          connect: ticketIds.map((id) => ({ id })),
+      const createdOrder = await tx.order.create({
+        data: {
+          total,
+          userId,
+          snackCombos: {
+            create: snackCombos.map((combo) => ({
+              quantity: combo.quantity,
+              snackCombo: {
+                connect: { id: combo.snackComboId },
+              },
+            })),
+          },
         },
-        snackCombos: {
-          create: snackCombos.map((combo) => ({
-            quantity: combo.quantity,
-            snackCombo: {
-              connect: { id: combo.snackComboId },
-            },
-          })),
+        include: {
+          tickets: true,
+          snackCombos: { include: { snackCombo: true } },
         },
-      },
-      include: {
-        tickets: true,
-        snackCombos: { include: { snackCombo: true } },
-      },
+      });
+
+      // Uma ordem estável de bloqueio evita deadlocks entre pedidos com vários ingressos.
+      for (const id of [...ticketIds].sort()) {
+        // A condição é reavaliada no banco mesmo após uma compra concorrente.
+        const updated = await tx.ticket.updateMany({
+          where: { id, orderId: null },
+          data: { orderId: createdOrder.id },
+        });
+        if (updated.count !== 1) {
+          // A exceção desfaz o pedido, os combos e os ingressos já vinculados.
+          throw new ConflictException(
+            `Ticket ${id} is already part of an order.`,
+          );
+        }
+      }
+
+      if (ticketIds.length === 0) return createdOrder;
+      return tx.order.findUniqueOrThrow({
+        where: { id: createdOrder.id },
+        include: {
+          tickets: true,
+          snackCombos: { include: { snackCombo: true } },
+        },
+      });
     });
-
-    return createdOrder;
   }
 
   findAllByUserId(userId: string) {
