@@ -65,6 +65,16 @@ describe('App (HTTP, sem banco)', () => {
   );
 
   it.each([
+    ['get', '/api/users'],
+    ['get', '/api/users/me'],
+    ['get', '/api/users/' + userId],
+    ['patch', '/api/users/' + userId],
+    ['delete', '/api/users/' + userId],
+  ] as const)('%s %s exige autenticação', async (method, path) => {
+    await request(app.getHttpServer())[method](path).send({}).expect(401);
+  });
+
+  it.each([
     ['movie', 'movie'],
     ['genre', 'genre'],
     ['room', 'room'],
@@ -79,15 +89,13 @@ describe('App (HTTP, sem banco)', () => {
   });
 
   it('retorna 401 para login com senha errada', async () => {
-    prisma.user.findMany.mockResolvedValue([
-      {
-        id: userId,
-        email: 'cliente@example.com',
-        password: 'correta',
-        name: 'Cliente',
-        profile: { name: 'USER' },
-      },
-    ]);
+    prisma.user.findUnique.mockResolvedValue({
+      id: userId,
+      email: 'cliente@example.com',
+      password: 'correta',
+      name: 'Cliente',
+      profile: { name: 'USER' },
+    });
     await request(app.getHttpServer())
       .post('/api/users/login')
       .send({ email: 'cliente@example.com', password: 'errada' })
@@ -95,20 +103,34 @@ describe('App (HTTP, sem banco)', () => {
   });
 
   it('aceita em /order/me o token emitido pelo login com o segredo compartilhado', async () => {
-    prisma.user.findMany.mockResolvedValue([
-      {
-        id: userId,
-        email: 'cliente@example.com',
-        password: 'correta',
-        name: 'Cliente',
-        profile: { name: 'USER' },
-      },
-    ]);
+    prisma.user.findUnique.mockResolvedValue({
+      id: userId,
+      email: 'cliente@example.com',
+      password: 'correta',
+      name: 'Cliente',
+      profile: { name: 'USER' },
+    });
     const response = await request(app.getHttpServer())
       .post('/api/users/login')
       .send({ email: 'cliente@example.com', password: 'correta' })
       .expect(201);
     const body = response.body as { access_token: string };
+    expect(response.body).not.toHaveProperty('user.password');
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { password: expect.stringMatching(/^scrypt\$/) as unknown },
+      }),
+    );
+    await request(app.getHttpServer())
+      .get('/api/users/me')
+      .set('Authorization', 'Bearer ' + body.access_token)
+      .expect(200)
+      .expect({
+        id: userId,
+        email: 'cliente@example.com',
+        name: 'Cliente',
+        profile: { name: 'USER' },
+      });
     prisma.order.findMany.mockResolvedValue([{ id: resourceId, userId }]);
     await request(app.getHttpServer())
       .get('/api/order/me')
