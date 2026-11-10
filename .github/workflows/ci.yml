@@ -19,8 +19,8 @@ jobs:
       DATABASE_URL: postgresql://user:password@localhost:5432/cinema_db?schema=public
       JWT_SECRET: segredo-apenas-para-testes-do-ci
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -54,8 +54,8 @@ jobs:
       ADMIN_EMAIL: admin@example.com
       ADMIN_PASSWORD: senha-do-admin-no-ci
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -103,8 +103,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
