@@ -54,7 +54,8 @@ jobs:
       - name: Painel web
         working-directory: frontend
         run: |
-          nohup npx vite preview --port 4173 --strictPort > /tmp/web.log 2>&1 &
+          # Arquivos estáticos do build; não depende do Vite (o npm ci do backend mexe no node_modules).
+          nohup python3 -m http.server 4173 --directory dist > /tmp/web.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://localhost:4173/ > /dev/null && break; sleep 2; done
       - name: Prints
         run: |
