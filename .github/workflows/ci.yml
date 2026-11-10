@@ -61,6 +61,7 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
+      - run: npx prisma generate
       - run: npx prisma migrate deploy
       - run: npx prisma db seed
       # O seed precisa ser idempotente: a segunda vez não pode falhar nem duplicar.
