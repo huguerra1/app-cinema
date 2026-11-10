@@ -2,6 +2,14 @@
 
 Um sistema Fullstack completo para gerenciamento e venda de ingressos de cinema e lanches (bomboniere). O aplicativo permite que o usuário explore o catálogo de filmes, escolha sessões, adicione itens a um carrinho de compras local e finalize pedidos com segurança e histórico de compras.
 
+[![CI](https://github.com/huguerra1/app-cinema/actions/workflows/ci.yml/badge.svg)](https://github.com/huguerra1/app-cinema/actions/workflows/ci.yml)
+
+| Sessões programadas | Caixa (pedido) | Admin: agendar sessão |
+|---|---|---|
+| ![Lista de sessões com filme, horário e preço](docs/img/painel-sessoes.png) | ![Tela de venda com cliente autenticado](docs/img/painel-pedido.png) | ![Formulário de agendamento de sessão com preço](docs/img/painel-admin-sessao.png) |
+
+_Prints do painel web com os dados de exemplo do seed, gerados pelo workflow **Capturas** (Actions → Capturas → Run workflow)._
+
 ---
 
 ## 🚀 Funcionalidades Principais

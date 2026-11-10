@@ -1,0 +1,66 @@
+name: Capturas
+
+# Gera os prints do painel web para o README. Rode manualmente (Actions → Capturas → Run workflow);
+# as imagens saem como artefato "capturas".
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  painel:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: cinema_db
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U user -d cinema_db"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://user:password@localhost:5432/cinema_db?schema=public
+      JWT_SECRET: segredo-apenas-para-as-capturas
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASSWORD: senha-do-admin-nas-capturas
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # O repositório usa workspaces do npm: os dois `npm ci` reinstalam o node_modules da raiz, então
+      # tudo é instalado ANTES de subir a API (senão ela perde arquivos enquanto roda).
+      - name: Build do painel web
+        working-directory: frontend
+        run: |
+          npm ci
+          VITE_API_URL=http://localhost:3000/api npm run build
+      - name: API com dados de exemplo
+        working-directory: backend
+        run: |
+          npm ci
+          npx prisma generate
+          npx prisma migrate deploy
+          npx prisma db seed
+          npm run build
+          nohup node dist/src/main > /tmp/api.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://localhost:3000/api/movie > /dev/null && break; sleep 2; done
+      - name: Painel web
+        working-directory: frontend
+        run: |
+          # Arquivos estáticos do build; não depende do Vite (o npm ci do backend mexe no node_modules).
+          nohup python3 -m http.server 4173 --directory dist > /tmp/web.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://localhost:4173/ > /dev/null && break; sleep 2; done
+      - name: Prints
+        run: |
+          mkdir -p capturas /tmp/pptr && cd /tmp/pptr && npm init -y > /dev/null && npm install puppeteer@24 > /dev/null
+          cp "$GITHUB_WORKSPACE/.github/scripts/capturar-painel.mjs" /tmp/pptr/
+          node /tmp/pptr/capturar-painel.mjs "$GITHUB_WORKSPACE/capturas" || (cat /tmp/api.log /tmp/web.log; exit 1)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: capturas
+          path: capturas/
