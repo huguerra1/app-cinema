@@ -13,7 +13,7 @@ export class TicketService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createTicketDto: CreateTicketDto, userId: string) {
-    const { sessionId, seat, price, orderId } = createTicketDto;
+    const { sessionId, seat, orderId } = createTicketDto;
     if (orderId !== undefined) {
       const order = await this.prisma.order.findFirst({
         where: { id: orderId, userId },
@@ -53,7 +53,7 @@ export class TicketService {
     }
 
     return this.prisma.ticket.create({
-      data: { sessionId, seat, price, orderId },
+      data: { sessionId, seat, price: session.price, orderId },
     });
   }
 
@@ -91,10 +91,19 @@ export class TicketService {
         'Não é permitido transferir um ingresso entre pedidos.',
       );
     }
-    const { sessionId, seat, price } = updateTicketDto;
+    // Um ingresso comprado mantém sua sessão e preço; o cliente não pode reprecificá-lo.
+    if (
+      updateTicketDto.sessionId !== undefined &&
+      updateTicketDto.sessionId !== ticket.sessionId
+    ) {
+      throw new ForbiddenException(
+        'Não é permitido trocar a sessão do ingresso.',
+      );
+    }
+    const { seat } = updateTicketDto;
     return this.prisma.ticket.update({
       where: { id, order: { userId } },
-      data: { sessionId, seat, price },
+      data: { seat },
     });
   }
 

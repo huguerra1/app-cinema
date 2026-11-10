@@ -1,7 +1,22 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsDateString, IsUUID } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsDateString,
+  IsNumber,
+  IsOptional,
+  Min,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateSessionDto {
+  @ApiPropertyOptional({
+    description: 'Preço do ingresso da sessão.',
+    default: 25,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  price?: number;
+
   @ApiProperty({
     description: 'The start time of the session in ISO 8601 format.',
     example: '2026-04-01T20:00:00.000Z',

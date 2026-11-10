@@ -4,7 +4,13 @@ import * as api from './apiService';
 // 1. ESTADO DE AUTENTICAÇÃO E ADMIN
 // ==========================================
 let isAdmin = false;
-let currentUser: any = JSON.parse(localStorage.getItem('cine_user') || 'null');
+let currentUser: any = null;
+try {
+  if (api.getToken()) currentUser = JSON.parse(localStorage.getItem('cine_user') || 'null');
+} catch {
+  api.clearToken();
+  localStorage.removeItem('cine_user');
+}
 
 function updateAuthState() {
   const userInfo = document.getElementById('user-info');
@@ -23,10 +29,8 @@ function updateAuthState() {
     if (userNameDisplay) userNameDisplay.innerText = currentUser.name || 'Usuário';
     if (pdvUsuarioNome) pdvUsuarioNome.value = `${currentUser.name} (${currentUser.email})`;
 
-    // === A MÁGICA AQUI ===
-    // Verifica se o profile do usuário é ADMIN
-    // (Ajuste para "ADMIN" ou "ADMINISTRADOR" conforme o seu banco)
-    if (currentUser.profile && currentUser.profile.name === 'ADMIN') {
+    // O backend também verifica o papel em todas as escritas do catálogo.
+    if (currentUser.profile === 'ADMIN') {
       btnToggleAdmin?.classList.remove('d-none'); // Mostra o botão se for Admin
     } else {
       btnToggleAdmin?.classList.add('d-none');    // Esconde se for User comum
@@ -39,6 +43,8 @@ function updateAuthState() {
     }
 
   } else {
+    isAdmin = false;
+    document.querySelectorAll('.admin-only').forEach(el => el.classList.add('d-none'));
     // 2. Deslogado: Esconde tudo e mostra Login
     userInfo?.classList.add('d-none');
     btnLogout?.classList.add('d-none');
@@ -50,6 +56,7 @@ function updateAuthState() {
 
 // Logout
 document.getElementById('btn-logout')?.addEventListener('click', () => {
+  api.clearToken();
   localStorage.removeItem('cine_user');
   currentUser = null;
   updateAuthState();
@@ -57,15 +64,26 @@ document.getElementById('btn-logout')?.addEventListener('click', () => {
   document.querySelector('.nav-link[data-target="view-sessoes"]')?.dispatchEvent(new Event('click'));
 });
 
-// Admin Toggle
+window.addEventListener('auth-expired', () => {
+  localStorage.removeItem('cine_user');
+  currentUser = null;
+  updateAuthState();
+  document.querySelector('.nav-link[data-target="view-login"]')?.dispatchEvent(new Event('click'));
+});
+
+// Alterna o modo administrativo.
 const btnToggleAdmin = document.getElementById('btn-toggle-admin');
 const adminElements = document.querySelectorAll('.admin-only');
 btnToggleAdmin?.addEventListener('click', () => {
+  if (currentUser?.profile !== 'ADMIN' || !api.getToken()) return;
   isAdmin = !isAdmin;
   btnToggleAdmin.innerText = isAdmin ? 'Sair do Modo Admin' : 'Modo Admin';
   btnToggleAdmin.classList.toggle('btn-danger', isAdmin);
   btnToggleAdmin.classList.toggle('btn-outline-light', !isAdmin);
-  adminElements.forEach(el => isAdmin ? el.classList.remove('d-none') : el.classList.add('d-none'));
+  adminElements.forEach(el => {
+    if (!isAdmin || !el.classList.contains('view-section')) el.classList.toggle('d-none', !isAdmin);
+  });
+  document.querySelector('.nav-link[data-target="view-sessoes"]')?.dispatchEvent(new Event('click'));
 });
 
 // Navegação (SPA)
@@ -93,9 +111,16 @@ navLinks.forEach(link => {
 function showAlert(message: string, type: string) {
   const container = document.getElementById('alert-container');
   if (container) {
-    container.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show">${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+    container.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show"><span></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+    container.querySelector('span')!.textContent = message;
     setTimeout(() => { container.innerHTML = ''; }, 4000);
   }
+}
+
+function escapeHtml(value: string) {
+  const element = document.createElement('span');
+  element.textContent = value;
+  return element.innerHTML;
 }
 
 function populateSelect(selectElement: HTMLSelectElement, data: any[], labelField: string, valueField: string, customLabel?: (item: any) => string) {
@@ -122,8 +147,9 @@ async function loadDashboard() {
     if (sessoesContainer) {
       sessoesContainer.innerHTML = sessoes.length ? sessoes.map((s: any) => `
         <div class="col-md-4 mb-3"><div class="card shadow-sm border-primary h-100"><div class="card-body">
-          <h5 class="text-primary">🎬 ${s.movie?.title || 'Filme'}</h5>
+          <h5 class="text-primary">🎬 ${escapeHtml(s.movie?.title || 'Filme')}</h5>
           <p><strong>Horário:</strong> ${new Date(s.startTime).toLocaleString('pt-BR')}</p>
+          <p><strong>Preço:</strong> R$ ${Number(s.price).toFixed(2)}</p>
         </div></div></div>
       `).join('') : '<p>Nenhuma sessão cadastrada.</p>';
     }
@@ -136,6 +162,12 @@ async function loadDashboard() {
       const f = filmes.find((f:any) => f.id === s.movieId);
       return `${f?.title || 'Filme'} - ${new Date(s.startTime).toLocaleString('pt-BR')}`;
     });
+    const sessionSelect = document.getElementById('pdv-sessao') as HTMLSelectElement;
+    sessionSelect.onchange = () => {
+      const session = sessoes.find((s: any) => s.id === sessionSelect.value);
+      (document.getElementById('pdv-preco-ingresso') as HTMLInputElement).value = session ? String(session.price) : '';
+    };
+    sessionSelect.dispatchEvent(new Event('change'));
   } catch (error: any) { showAlert('Erro ao carregar: ' + error.message, 'danger'); }
 }
 
@@ -181,7 +213,7 @@ document.getElementById('form-login')?.addEventListener('submit', async (e) => {
 // Admin: Cadastros Básicos
 document.getElementById('form-filme')?.addEventListener('submit', async (e) => { e.preventDefault(); try { const g = (document.getElementById('filme-genero') as HTMLSelectElement).value; if(!g) return showAlert('Selecione um Gênero!','warning'); await api.createFilme({ title: (document.getElementById('filme-titulo') as HTMLInputElement).value, durationMinutes: parseInt((document.getElementById('filme-duracao') as HTMLInputElement).value), synopsis: (document.getElementById('filme-sinopse') as HTMLInputElement).value, genreId: g }); showAlert('Filme salvo!', 'success'); (e.target as HTMLFormElement).reset(); loadDashboard(); } catch (err: any) { showAlert('Erro: ' + err.message, 'danger'); } });
 document.getElementById('form-sala')?.addEventListener('submit', async (e) => { e.preventDefault(); try { await api.createSala({ name: (document.getElementById('sala-nome') as HTMLInputElement).value, capacity: parseInt((document.getElementById('sala-capacidade') as HTMLInputElement).value) }); showAlert('Sala salva!', 'success'); (e.target as HTMLFormElement).reset(); loadDashboard(); } catch (err: any) { showAlert(err.message, 'danger'); } });
-document.getElementById('sessao-form')?.addEventListener('submit', async (e) => { e.preventDefault(); try { await api.createSessao({ startTime: new Date((document.getElementById('horario-inicio') as HTMLInputElement).value).toISOString(), movieId: (document.getElementById('filme-select') as HTMLSelectElement).value, roomId: (document.getElementById('sala-select') as HTMLSelectElement).value }); showAlert('Sessão agendada!', 'success'); (e.target as HTMLFormElement).reset(); loadDashboard(); } catch (err: any) { showAlert(err.message, 'danger'); } });
+document.getElementById('sessao-form')?.addEventListener('submit', async (e) => { e.preventDefault(); try { await api.createSessao({ startTime: new Date((document.getElementById('horario-inicio') as HTMLInputElement).value).toISOString(), movieId: (document.getElementById('filme-select') as HTMLSelectElement).value, roomId: (document.getElementById('sala-select') as HTMLSelectElement).value, price: Number((document.getElementById('sessao-preco') as HTMLInputElement).value) }); showAlert('Sessão agendada!', 'success'); (e.target as HTMLFormElement).reset(); loadDashboard(); } catch (err: any) { showAlert(err.message, 'danger'); } });
 document.getElementById('form-lanche')?.addEventListener('submit', async (e) => { e.preventDefault(); try { await api.createLanche({ name: (document.getElementById('lanche-nome') as HTMLInputElement).value, price: parseFloat((document.getElementById('lanche-preco') as HTMLInputElement).value) }); showAlert('Combo adicionado!', 'success'); (e.target as HTMLFormElement).reset(); loadDashboard(); } catch (err: any) { showAlert(err.message, 'danger'); } });
 document.getElementById('form-genero')?.addEventListener('submit', async (e) => { e.preventDefault(); try { await api.createGenero({ name: (document.getElementById('genero-nome') as HTMLInputElement).value }); showAlert('Gênero salvo!', 'success'); (e.target as HTMLFormElement).reset(); loadDashboard(); } catch (err: any) { showAlert(err.message, 'danger'); } });
 
@@ -193,14 +225,11 @@ document.getElementById('form-pedido')?.addEventListener('submit', async (e) => 
   try {
     const snackComboId = (document.getElementById('pdv-combo') as HTMLSelectElement).value;
     const quantity = parseInt((document.getElementById('pdv-combo-qtd') as HTMLInputElement).value);
-    const order = await api.createPedido({ userId: currentUser.id, ticketIds: [], snackCombos: snackComboId ? [{ snackComboId, quantity }] : [] });
-    
-    await api.createTicket({
-      price: parseFloat((document.getElementById('pdv-preco-ingresso') as HTMLInputElement).value),
+    const ticket = await api.createTicket({
       seat: (document.getElementById('pdv-assento') as HTMLInputElement).value,
       sessionId: (document.getElementById('pdv-sessao') as HTMLSelectElement).value,
-      orderId: order.id
     });
+    await api.createPedido({ ticketIds: [ticket.id], snackCombos: snackComboId ? [{ snackComboId, quantity }] : [] });
     showAlert('✅ Pedido finalizado com sucesso!', 'success');
     (e.target as HTMLFormElement).reset();
     loadDashboard();

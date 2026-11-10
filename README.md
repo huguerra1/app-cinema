@@ -70,6 +70,53 @@ npx expo start
 ```
 Depois de iniciar o Expo, escaneie o QR Code com o aplicativo Expo Go no celular.
 
+### Primeiro administrador e painel web
+
+No `backend/.env`, configure `DATABASE_URL`, `JWT_SECRET` e, opcionalmente, `ADMIN_EMAIL` e `ADMIN_PASSWORD`. Use um email exclusivo para o administrador e uma senha forte. Em seguida, dentro de `backend/`:
+
+```bash
+npx prisma generate
+npx prisma migrate deploy
+npx prisma db seed
+```
+
+O seed reutiliza ou cria os perfis `USER` e `ADMIN`. Com as duas variáveis de admin preenchidas, cria a conta com senha em hash scrypt. Sem ambas, cria somente os perfis e emite um aviso. Pode ser executado novamente: não troca senhas nem promove contas existentes. Se o email já pertencer a outro perfil, falha e pede um email exclusivo. Execute uma instância do seed por vez, pois o nome do perfil ainda não tem restrição única. O comando está registrado em `package.json` (`prisma.seed`) e em `prisma.config.ts` para o Prisma 7. Depois da criação, remova as credenciais de bootstrap do ambiente.
+
+Com Docker, após iniciar os serviços, aplique a migration e execute o seed manualmente. As variáveis são lidas do `.env` da raiz pelo Compose:
+
+```bash
+docker compose exec backend npx prisma migrate deploy
+docker compose exec backend npx prisma db seed
+```
+
+Para o painel local, dentro de `frontend/`:
+
+```bash
+npm install
+cp .env.example .env
+npm run dev
+```
+
+`VITE_API_URL` define a URL pública da API e tem padrão `http://localhost:3000/api`; é incorporada no build do Vite. Ao mudar a variável, reinicie o servidor de desenvolvimento ou gere o build novamente. A tela **Entrar / Cadastrar** envia email e senha para `POST /api/users/login`. O painel guarda `access_token` em `localStorage` e envia `Authorization: Bearer` nas chamadas da API, inclusive todas as escritas. O botão **Modo Admin** aparece para contas ADMIN; a autorização é validada pelo servidor. Sair remove o token; respostas 401 também encerram a sessão local.
+
+### Permissões e preço do ingresso
+
+Todas as rotas abaixo usam o prefixo `/api`:
+
+| Rotas | Leituras GET | Escritas POST/PATCH/DELETE |
+| --- | --- | --- |
+| `/movie`, `/genre`, `/room`, `/session`, `/snack-combo` (e `/:id`) | Públicas | JWT com papel `ADMIN`; sem token: 401, cliente: 403 |
+| `/users`, `/users/login` | Cadastro e login via POST públicos | Cadastro sempre cria `USER` |
+| `/users/me`, `/users/:id` e GET `/users` | JWT, somente o próprio usuário | PATCH/DELETE somente do próprio usuário |
+| `/order`, `/ticket`, `/address` | JWT e filtros de propriedade | JWT e filtros de propriedade |
+| `/profile` | JWT, somente o próprio perfil | Mutações continuam bloqueadas (403) |
+
+Não há rotas PUT no catálogo; esse método retorna 404. Tokens antigos sem `role` consultam o perfil no banco pelo `sub` antes de autorizar as escritas. Tokens com papel usam a informação assinada e expiram em um dia; mudanças de papel exigem novo login ou expiração do token anterior.
+
+`Session.price` é obrigatório no banco e tem padrão 25, inclusive nas sessões existentes após a migration. ADMIN pode definir ou editar um preço não negativo em `/session`. `POST /ticket` usa o preço atual da sessão e ignora o campo legado `price` do cliente, que agora é opcional. PATCH de ingresso também ignora `price` e impede trocar a sessão, preservando o preço da compra. O painel exibe o preço da sessão, sem edição no PDV, e cria o ingresso antes do pedido para incluir seu valor no total. O mobile usa o preço da sessão no carrinho; o servidor continua sendo a fonte do preço ao criar o ingresso.
+
+Ainda estão pendentes as transações para reserva/vinculação de ingressos, a propriedade de ingressos sem pedido e o recálculo dos totais ao alterar/excluir ingressos de pedidos existentes. O preço mostrado em carrinhos antigos pode ficar desatualizado se o admin mudar a sessão antes da compra.
+
 ## 🏗️ Modelagem do banco de dados (resumo)
 A arquitetura do banco foi desenhada para refletir um ambiente real de e-commerce e cinema:
 
