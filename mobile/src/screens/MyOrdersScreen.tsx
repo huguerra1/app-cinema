@@ -29,7 +29,7 @@ export default class MyOrdersScreen extends Component<MyOrdersScreenProps, MyOrd
  carregarPedidos = async () => {
     try {
       const token = await AsyncStorage.getItem('@jwt_token');
-      const userId = await AsyncStorage.getItem('@user_id'); // Pega o ID logado
+      const userId = await AsyncStorage.getItem('@user_id');
       
       if (!userId) {
         Alert.alert('Erro', 'Usuário não identificado. Faça login novamente.');
@@ -50,7 +50,6 @@ export default class MyOrdersScreen extends Component<MyOrdersScreenProps, MyOrd
     }
   }
 
-  // Função para formatar a data do pedido
   formatarData = (dataString: string) => {
     if (!dataString) return '';
     const data = new Date(dataString);
@@ -58,24 +57,20 @@ export default class MyOrdersScreen extends Component<MyOrdersScreenProps, MyOrd
   }
 
   renderPedido = ({ item }: { item: any }) => {
-    // Pega os 6 últimos caracteres do ID para ser o "Número do Pedido"
     const numeroPedido = item.id.substring(item.id.length - 6).toUpperCase();
 
     return (
       <View style={styles.orderCard}>
-        {/* Cabeçalho do Pedido */}
         <View style={styles.orderHeader}>
           <Text style={styles.orderId}>Pedido #{numeroPedido}</Text>
           <Text style={styles.orderDate}>{this.formatarData(item.createdAt)}</Text>
         </View>
 
         <View style={styles.orderBody}>
-          {/* Seção de Ingressos */}
           {item.tickets && item.tickets.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>🎫 Ingressos ({item.tickets.length}):</Text>
               {item.tickets.map((ticket: any, index: number) => {
-                // Tenta pegar o nome do filme se o backend enviar, senão mostra a cadeira
                 const titulo = ticket.session?.movie?.title || 'Sessão de Cinema';
                 return (
                   <Text key={index} style={styles.itemText}>
@@ -86,12 +81,10 @@ export default class MyOrdersScreen extends Component<MyOrdersScreenProps, MyOrd
             </View>
           )}
 
-          {/* Linha divisória se tiver ingressos e lanches */}
           {item.tickets?.length > 0 && item.snackCombos?.length > 0 && (
             <View style={styles.divider} />
           )}
 
-          {/* Seção de Lanches (Bomboniere) */}
           {item.snackCombos && item.snackCombos.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>🍿 Bomboniere:</Text>
@@ -107,7 +100,6 @@ export default class MyOrdersScreen extends Component<MyOrdersScreenProps, MyOrd
           )}
         </View>
 
-        {/* Rodapé com o Total */}
         <View style={styles.orderFooter}>
           <Text style={styles.totalText}>Valor Pago: R$ {Number(item.total).toFixed(2)}</Text>
         </View>

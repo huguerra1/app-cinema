@@ -14,7 +14,6 @@ export default class HomeScreen extends Component<HomeScreenProps> {
     this.props.navigation.replace('Login');
   }
 
-  // Função temporária para os botões que ainda vamos desenvolver
   emBreve = (sessao: string) => {
     Alert.alert('Em construção', `A tela de ${sessao} será desenvolvida em breve!`);
   }
@@ -27,10 +26,8 @@ export default class HomeScreen extends Component<HomeScreenProps> {
         <View style={styles.body}>
           <Text style={styles.welcomeText}>O que você deseja fazer?</Text>
 
-          {/* Container da Grade de Botões */}
           <View style={styles.gridContainer}>
             
-            {/* Card 1: Lista de Filmes (Vai para o Catálogo real) */}
             <TouchableOpacity 
               style={styles.card} 
               onPress={() => this.props.navigation.navigate('Catalog')}
@@ -39,7 +36,6 @@ export default class HomeScreen extends Component<HomeScreenProps> {
               <Text style={styles.cardTitle}>Lista de Filmes</Text>
             </TouchableOpacity>
 
-            {/* Card 2: Comprar Ingressos */}
             <TouchableOpacity 
               style={styles.card} 
               onPress={() => this.props.navigation.navigate('BuyTicket')}
@@ -48,7 +44,6 @@ export default class HomeScreen extends Component<HomeScreenProps> {
               <Text style={styles.cardTitle}>Comprar Ingressos</Text>
             </TouchableOpacity>
 
-            {/* Card 3: Meus Pedidos */}
             <TouchableOpacity 
               style={styles.card} 
               onPress={() => this.props.navigation.navigate('MyOrders')}
@@ -57,7 +52,6 @@ export default class HomeScreen extends Component<HomeScreenProps> {
               <Text style={styles.cardTitle}>Meus Pedidos</Text>
             </TouchableOpacity>
 
-            {/* Card 4: Lanches */}
             <TouchableOpacity 
               style={styles.card} 
               onPress={() => this.props.navigation.navigate('Snacks')}            >
@@ -65,7 +59,6 @@ export default class HomeScreen extends Component<HomeScreenProps> {
               <Text style={styles.cardTitle}>Bomboniere</Text>
             </TouchableOpacity>
             
-            {/* Card Extra: Carrinho */}
             <TouchableOpacity 
               style={styles.card} 
               onPress={() => this.props.navigation.navigate('Cart')}
@@ -106,19 +99,19 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between', // Espalha os cards
+    justifyContent: 'space-between',
   },
   card: {
     backgroundColor: '#30293B',
-    width: '48%', // Quase metade da tela para caberem 2 por linha com um espacinho no meio
-    aspectRatio: 1, // Deixa o card perfeitamente quadrado
+    width: '48%',
+    aspectRatio: 1,
     borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 15,
     borderWidth: 1,
     borderColor: '#4A3E5C',
-    elevation: 4, // Sombra no Android
+    elevation: 4,
   },
   cardIcon: {
     fontSize: 40,
@@ -136,7 +129,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
-    marginTop: 'auto', // Empurra o botão pro final da tela
+    marginTop: 'auto',
     marginBottom: 10,
   },
   logoutText: {
