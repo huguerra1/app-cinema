@@ -10,6 +10,14 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     groups:
+      # Versões major de frameworks cujos pacotes precisam subir juntos chegam num PR só
+      # (por exemplo, @nestjs/testing 12 com @nestjs/core 11 quebra o build).
+      nestjs:
+        patterns: ['@nestjs/*']
+        update-types: [major]
+      prisma:
+        patterns: ['prisma', '@prisma/*']
+        update-types: [major]
       menores:
         update-types: [minor, patch]
     ignore:
