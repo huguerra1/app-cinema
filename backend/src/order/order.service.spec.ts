@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { OrderService } from './order.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -57,23 +53,18 @@ describe('OrderService', () => {
     );
   });
 
-  it('rejeita a criação em nome de outro usuário', async () => {
-    await expect(
-      service.create({ userId: otherId }, userId),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-    expect(prisma.order.create).not.toHaveBeenCalled();
-    expect(prisma.user.findUnique).not.toHaveBeenCalled();
-  });
-
-  it('aceita o userId legado quando coincide com o token', async () => {
-    prisma.user.findUnique.mockResolvedValue({ id: userId });
-    await service.create({ userId }, userId);
-    expect(prisma.order.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ userId }) as unknown,
-      }),
-    );
-  });
+  it.each([userId, otherId])(
+    'ignora o userId legado %s e usa o token',
+    async (bodyUserId) => {
+      prisma.user.findUnique.mockResolvedValue({ id: userId });
+      await service.create({ ...{ userId: bodyUserId } }, userId);
+      expect(prisma.order.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ userId }) as unknown,
+        }),
+      );
+    },
+  );
 
   it('não permite reutilizar um ingresso comprado', async () => {
     prisma.user.findUnique.mockResolvedValue({ id: userId });
@@ -122,10 +113,12 @@ describe('OrderService', () => {
   });
 
   it('não transfere a propriedade de um pedido', async () => {
-    await expect(
-      service.update('pedido', { userId: otherId }, userId),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-    expect(prisma.order.update).not.toHaveBeenCalled();
+    prisma.order.findFirst.mockResolvedValue({ id: 'pedido', userId });
+    await service.update('pedido', { ...{ userId: otherId } }, userId);
+    expect(prisma.order.update).toHaveBeenCalledWith({
+      where: { id: 'pedido', userId },
+      data: { userId },
+    });
   });
 
   it('não aplica alterações de itens sem recalcular o total', async () => {

@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateMovieDto } from './dto/create-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
 
@@ -17,21 +17,27 @@ export class MovieService {
     return this.prisma.movie.findMany({ include: { genre: true } });
   }
 
-  findOne(id: string) {
-    return this.prisma.movie.findUnique({
+  async findOne(id: string) {
+    const result = await this.prisma.movie.findUnique({
       where: { id },
       include: { genre: true },
     });
+    if (!result) {
+      throw new NotFoundException('Filme não encontrado.');
+    }
+    return result;
   }
 
-  update(id: string, updateMovieDto: UpdateMovieDto) {
+  async update(id: string, updateMovieDto: UpdateMovieDto) {
+    await this.findOne(id);
     return this.prisma.movie.update({
       where: { id },
       data: updateMovieDto,
     });
   }
 
-  remove(id: string) {
+  async remove(id: string) {
+    await this.findOne(id);
     return this.prisma.movie.delete({ where: { id } });
   }
 }

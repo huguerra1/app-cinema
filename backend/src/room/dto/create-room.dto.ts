@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsPositive, IsString } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class CreateRoomDto {
   @ApiProperty({
@@ -8,6 +15,7 @@ export class CreateRoomDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
   name: string;
 
   @ApiProperty({
@@ -15,6 +23,7 @@ export class CreateRoomDto {
     example: 100,
   })
   @IsInt()
-  @IsPositive()
+  @Min(1)
+  @Max(2147483647)
   capacity: number;
 }

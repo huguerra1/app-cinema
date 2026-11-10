@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsPositive, IsUUID } from 'class-validator';
+import { IsInt, IsUUID, Max, Min } from 'class-validator';
 
 export class SnackComboOrderDto {
   @ApiProperty({
@@ -14,6 +14,7 @@ export class SnackComboOrderDto {
     example: 2,
   })
   @IsInt()
-  @IsPositive()
+  @Min(1)
+  @Max(2147483647)
   quantity: number;
 }

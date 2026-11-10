@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,7 +12,6 @@ export class OrderService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createOrderDto: CreateOrderDto, userId: string) {
-    this.checkUserId(createOrderDto.userId, userId);
     const { ticketIds = [], snackCombos = [] } = createOrderDto;
     let total = 0;
 
@@ -126,16 +124,7 @@ export class OrderService {
     return order;
   }
 
-  private checkUserId(bodyUserId: string | undefined, userId: string) {
-    if (bodyUserId !== undefined && bodyUserId !== userId) {
-      throw new ForbiddenException(
-        'O pedido deve pertencer ao usuário autenticado.',
-      );
-    }
-  }
-
   async update(id: string, updateOrderDto: UpdateOrderDto, userId: string) {
-    this.checkUserId(updateOrderDto.userId, userId);
     await this.findOne(id, userId);
     // Alterar itens exige recalcular o total e reservar ingressos em transação.
     if (

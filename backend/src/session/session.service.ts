@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { addMinutes } from 'date-fns';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 
@@ -61,21 +61,27 @@ export class SessionService {
     });
   }
 
-  findOne(id: string) {
-    return this.prisma.session.findUnique({
+  async findOne(id: string) {
+    const result = await this.prisma.session.findUnique({
       where: { id },
       include: { movie: true, room: true },
     });
+    if (!result) {
+      throw new NotFoundException('Sessão não encontrada.');
+    }
+    return result;
   }
 
-  update(id: string, updateSessionDto: UpdateSessionDto) {
+  async update(id: string, updateSessionDto: UpdateSessionDto) {
+    await this.findOne(id);
     return this.prisma.session.update({
       where: { id },
       data: updateSessionDto,
     });
   }
 
-  remove(id: string) {
+  async remove(id: string) {
+    await this.findOne(id);
     return this.prisma.session.delete({ where: { id } });
   }
 }
