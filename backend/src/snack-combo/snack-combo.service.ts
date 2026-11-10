@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateSnackComboDto } from './dto/create-snack-combo.dto';
 import { UpdateSnackComboDto } from './dto/update-snack-combo.dto';
 
@@ -17,18 +17,24 @@ export class SnackComboService {
     return this.prisma.snackCombo.findMany();
   }
 
-  findOne(id: string) {
-    return this.prisma.snackCombo.findUnique({ where: { id } });
+  async findOne(id: string) {
+    const result = await this.prisma.snackCombo.findUnique({ where: { id } });
+    if (!result) {
+      throw new NotFoundException('Combo não encontrado.');
+    }
+    return result;
   }
 
-  update(id: string, updateSnackComboDto: UpdateSnackComboDto) {
+  async update(id: string, updateSnackComboDto: UpdateSnackComboDto) {
+    await this.findOne(id);
     return this.prisma.snackCombo.update({
       where: { id },
       data: updateSnackComboDto,
     });
   }
 
-  remove(id: string) {
+  async remove(id: string) {
+    await this.findOne(id);
     return this.prisma.snackCombo.delete({ where: { id } });
   }
 }

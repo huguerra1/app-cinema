@@ -2,7 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsInt,
   IsNotEmpty,
-  IsPositive,
+  Min,
+  Max,
+  MaxLength,
   IsString,
   IsUUID,
 } from 'class-validator';
@@ -14,6 +16,7 @@ export class CreateMovieDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(255)
   title: string;
 
   @ApiProperty({
@@ -21,15 +24,18 @@ export class CreateMovieDto {
     example: 136,
   })
   @IsInt()
-  @IsPositive()
+  @Min(1)
+  @Max(2147483647)
   durationMinutes: number;
 
   @ApiProperty({
     description: 'A brief synopsis of the movie.',
-    example: 'A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers.',
+    example:
+      'A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers.',
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(10000)
   synopsis: string;
 
   @ApiProperty({

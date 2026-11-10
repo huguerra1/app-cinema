@@ -51,7 +51,12 @@ describe('TicketService', () => {
     prisma.order.findFirst.mockResolvedValue(null);
     await expect(
       service.create(
-        { sessionId: 'sessão', seat: 'A1', price: 10, orderId: 'alheio' },
+        {
+          sessionId: 'sessão',
+          seat: 'A1',
+          ...{ price: 10 },
+          orderId: 'alheio',
+        },
         'cliente',
       ),
     ).rejects.toBeInstanceOf(ForbiddenException);
@@ -69,7 +74,7 @@ describe('TicketService', () => {
     prisma.ticket.count.mockResolvedValue(0);
     prisma.ticket.findFirst.mockResolvedValue(null);
     await service.create(
-      { sessionId: 'sessão', seat: 'A1', price: 10 },
+      { sessionId: 'sessão', seat: 'A1', ...{ price: 10 } },
       'cliente',
     );
     expect(prisma.ticket.create).toHaveBeenCalledWith({
@@ -101,7 +106,8 @@ describe('TicketService', () => {
       sessionId: 'sessão',
       price: 37.5,
     });
-    await service.update('ingresso', { seat: 'B2', price: 1 }, 'cliente');
+    const payload = { seat: 'B2', price: 1 };
+    await service.update('ingresso', payload, 'cliente');
     expect(prisma.ticket.update).toHaveBeenCalledWith({
       where: { id: 'ingresso', order: { userId: 'cliente' } },
       data: { seat: 'B2' },

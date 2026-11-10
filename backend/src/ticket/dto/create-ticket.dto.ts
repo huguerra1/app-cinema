@@ -1,27 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsNotEmpty,
-  Allow,
   IsOptional,
   IsString,
   IsUUID,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateTicketDto {
-  @ApiProperty({
-    description: 'Campo legado ignorado; o servidor usa o preço da sessão.',
-    example: 15.5,
-    required: false,
-  })
-  @Allow()
-  price?: unknown;
-
   @ApiProperty({
     description: 'The seat identifier.',
     example: 'F12',
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(20)
   seat: string;
 
   @ApiProperty({

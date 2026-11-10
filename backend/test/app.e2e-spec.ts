@@ -23,7 +23,9 @@ describe('App (HTTP, sem banco)', () => {
       .compile();
     app = module.createNestApplication();
     app.setGlobalPrefix('api');
-    app.useGlobalPipes(new ValidationPipe());
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
   });
 
@@ -152,6 +154,136 @@ describe('App (HTTP, sem banco)', () => {
     expect(prisma.genre.create).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['genre', 'genre', { name: '' }],
+    [
+      'movie',
+      'movie',
+      {
+        title: 'Filme',
+        durationMinutes: 0,
+        synopsis: 'Sinopse',
+        genreId: resourceId,
+      },
+    ],
+    ['room', 'room', { name: 'Sala', capacity: 1.5 }],
+    [
+      'session',
+      'session',
+      { movieId: resourceId, roomId: resourceId, startTime: 'inválido' },
+    ],
+    ['snack-combo', 'snackCombo', { name: 'Pipoca', price: -1 }],
+  ] as const)(
+    'retorna 400 para POST /%s inválido como ADMIN',
+    async (route, delegate, payload) => {
+      const token = await jwt.signAsync({ sub: userId, role: 'ADMIN' });
+      await request(app.getHttpServer())
+        .post('/api/' + route)
+        .set('Authorization', 'Bearer ' + token)
+        .send(payload)
+        .expect(400);
+      expect(prisma[delegate].create).not.toHaveBeenCalled();
+    },
+  );
+
+  it('descarta campos extras no POST de filme antes de persistir', async () => {
+    const token = await jwt.signAsync({ sub: userId, role: 'ADMIN' });
+    const payload = {
+      title: 'Matrix',
+      durationMinutes: 136,
+      synopsis: 'Uma descoberta.',
+      genreId: resourceId,
+    };
+    prisma.movie.create.mockImplementation(({ data }: { data: object }) =>
+      Promise.resolve({ id: resourceId, ...data }),
+    );
+    await request(app.getHttpServer())
+      .post('/api/movie')
+      .set('Authorization', 'Bearer ' + token)
+      .send({
+        ...payload,
+        id: userId,
+        createdAt: '2020-01-01',
+        sessions: { create: [{}] },
+      })
+      .expect(201)
+      .expect({ id: resourceId, ...payload });
+    expect(prisma.movie.create).toHaveBeenCalledWith({ data: payload });
+  });
+
+  it('descarta campos extras no PATCH sem sobrescrever os campos omitidos', async () => {
+    const token = await jwt.signAsync({ sub: userId, role: 'ADMIN' });
+    prisma.genre.findUnique.mockResolvedValue({
+      id: resourceId,
+      name: 'Drama',
+    });
+    prisma.genre.update.mockResolvedValue({ id: resourceId, name: 'Comédia' });
+    await request(app.getHttpServer())
+      .patch('/api/genre/' + resourceId)
+      .set('Authorization', 'Bearer ' + token)
+      .send({ name: 'Comédia', id: userId, movies: { deleteMany: {} } })
+      .expect(200);
+    expect(prisma.genre.update).toHaveBeenCalledWith({
+      where: { id: resourceId },
+      data: { name: 'Comédia' },
+    });
+  });
+
+  it.each([
+    ['movie', 'movie'],
+    ['genre', 'genre'],
+    ['room', 'room'],
+    ['session', 'session'],
+    ['snack-combo', 'snackCombo'],
+  ] as const)(
+    'retorna 404 para GET /%s com id inexistente',
+    async (route, delegate) => {
+      prisma[delegate].findUnique.mockResolvedValue(null);
+      await request(app.getHttpServer())
+        .get('/api/' + route + '/' + resourceId)
+        .expect(404);
+    },
+  );
+
+  it('ignora userId, total e preço aninhado do pedido e usa os dados do servidor', async () => {
+    const token = await jwt.signAsync({ sub: userId, role: 'USER' });
+    prisma.user.findUnique.mockResolvedValue({ id: userId });
+    prisma.snackCombo.findMany.mockResolvedValue([
+      { id: resourceId, price: 10 },
+    ]);
+    prisma.order.create.mockResolvedValue({
+      id: resourceId,
+      userId,
+      total: 20,
+    });
+    await request(app.getHttpServer())
+      .post('/api/order')
+      .set('Authorization', 'Bearer ' + token)
+      .send({
+        userId: 'ignorado',
+        total: 0,
+        snackCombos: [{ snackComboId: resourceId, quantity: 2, price: 0 }],
+      })
+      .expect(201)
+      .expect({ id: resourceId, userId, total: 20 });
+    expect(prisma.order.create).toHaveBeenCalledWith({
+      data: {
+        userId,
+        total: 20,
+        tickets: { connect: [] },
+        snackCombos: {
+          create: [
+            { quantity: 2, snackCombo: { connect: { id: resourceId } } },
+          ],
+        },
+      },
+      include: {
+        tickets: true,
+        snackCombos: { include: { snackCombo: true } },
+      },
+    });
+  });
+
   it('mantém GET por id público', async () => {
     prisma.genre.findUnique.mockResolvedValue({
       id: resourceId,
@@ -218,6 +350,7 @@ describe('App (HTTP, sem banco)', () => {
         price: 35,
       },
     });
+    prisma.session.findUnique.mockResolvedValue({ id: resourceId, price: 35 });
     await request(app.getHttpServer())
       .patch('/api/session/' + resourceId)
       .set('Authorization', 'Bearer ' + token)

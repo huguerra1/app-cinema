@@ -11,7 +11,7 @@ async function bootstrap() {
 
   app.enableCors();
 
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   const config = new DocumentBuilder()
     .setTitle('Cine Ouro Pro API')
@@ -27,4 +27,4 @@ async function bootstrap() {
 
   console.log(`Application is running on: http://localhost:3000/api`);
 }
-bootstrap();
+void bootstrap();

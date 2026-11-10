@@ -31,7 +31,9 @@ describe('OrderController (HTTP, sem banco)', () => {
       'Bearer ' + (await module.get(JwtService).signAsync({ sub: userId }));
     app = module.createNestApplication();
     app.setGlobalPrefix('api');
-    app.useGlobalPipes(new ValidationPipe());
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
   });
 
@@ -105,13 +107,20 @@ describe('OrderController (HTTP, sem banco)', () => {
     );
   });
 
-  it('rejeita userId alheio no corpo', async () => {
+  it('ignora userId alheio no corpo e usa o token', async () => {
+    prisma.user.findUnique.mockResolvedValue({ id: userId });
+    prisma.order.create.mockResolvedValue({ id: 'pedido', userId, total: 0 });
     await request(app.getHttpServer())
       .post('/api/order')
       .set('Authorization', authorization)
       .send({ userId: otherId })
-      .expect(403);
-    expect(prisma.order.create).not.toHaveBeenCalled();
+      .expect(201)
+      .expect({ id: 'pedido', userId, total: 0 });
+    expect(prisma.order.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId }) as unknown,
+      }),
+    );
   });
 
   it.each(['get', 'patch', 'delete'] as const)(

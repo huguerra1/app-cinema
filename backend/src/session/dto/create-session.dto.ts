@@ -3,7 +3,7 @@ import {
   IsDateString,
   IsNumber,
   IsOptional,
-  Min,
+  IsPositive,
   IsUUID,
 } from 'class-validator';
 
@@ -14,14 +14,14 @@ export class CreateSessionDto {
   })
   @IsOptional()
   @IsNumber()
-  @Min(0)
+  @IsPositive()
   price?: number;
 
   @ApiProperty({
     description: 'The start time of the session in ISO 8601 format.',
     example: '2026-04-01T20:00:00.000Z',
   })
-  @IsDateString()
+  @IsDateString({ strict: true })
   startTime: string;
 
   @ApiProperty({

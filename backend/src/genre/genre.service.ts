@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateGenreDto } from './dto/create-genre.dto';
 import { UpdateGenreDto } from './dto/update-genre.dto';
 
@@ -17,18 +17,24 @@ export class GenreService {
     return this.prisma.genre.findMany();
   }
 
-  findOne(id: string) {
-    return this.prisma.genre.findUnique({ where: { id } });
+  async findOne(id: string) {
+    const result = await this.prisma.genre.findUnique({ where: { id } });
+    if (!result) {
+      throw new NotFoundException('Gênero não encontrado.');
+    }
+    return result;
   }
 
-  update(id: string, updateGenreDto: UpdateGenreDto) {
+  async update(id: string, updateGenreDto: UpdateGenreDto) {
+    await this.findOne(id);
     return this.prisma.genre.update({
       where: { id },
       data: updateGenreDto,
     });
   }
 
-  remove(id: string) {
+  async remove(id: string) {
+    await this.findOne(id);
     return this.prisma.genre.delete({ where: { id } });
   }
 }
