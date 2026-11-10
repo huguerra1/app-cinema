@@ -8,7 +8,7 @@
 - [x] Senhas com scrypt e migração no login; respostas/JWT sem password
 - [x] JWT, propriedade nas rotas pessoais e papéis ADMIN/USER
 - [x] README com Docker, execução local, arquitetura e permissões
-- [ ] Prints/GIF do web e do mobile no README
+- [x] Prints do painel web no README (workflow Capturas); faltam prints do app mobile
 - [x] Segredos via ambiente e arquivos `.env.example`
 - [x] URLs da API por variável no web e no mobile
 - [x] Comentários de rascunho removidos
@@ -35,7 +35,7 @@
 14. [ ] Propriedade de ingressos sem pedido; totais após editar/excluir tickets e preços em carrinhos antigos.
 15. [x] Validar os demais DTOs e ampliar a cobertura de testes.
 16. [ ] Padronizar lint no restante do código.
-17. [ ] Deploy público, prints/GIF e licença com o colaborador.
+17. [ ] Deploy público, prints do mobile e licença com o colaborador.
 
 ## Log
 - 2026-11-10 — Consistência da compra: Ticket com unicidade de (sessionId, seat) no schema e migration PostgreSQL manual. A migration bloqueia escritas durante a verificação e a criação do índice; se houver duplicatas, falha com mensagem e consulta para localizar os conflitos, sem apagar vendas. TicketService.create converte P2002 em 409 "assento já ocupado"; bloqueia a linha da sessão com SELECT FOR UPDATE e conta/cria dentro da mesma transação em READ COMMITTED, impedindo compras concorrentes de ultrapassar a capacidade. OrderService.create calcula o total e cria pedido/combos na transação, vincula ingressos com updateMany por id e orderId: null e exige count = 1; conflitos retornam 409 e revertem todas as escritas. Ingressos são vinculados em ordem estável para evitar deadlocks entre pedidos; a resposta relê os itens vinculados. Mock Prisma mantém suporte ao callback de $transaction e inclui consultas SQL, updateMany e findUniqueOrThrow. Testes cobrem P2002, lotação, ingresso já usado, disputa após a leitura com reversão simulada de pedido/combos/vínculos e caminho feliz; e2e verificam os 409 HTTP. Validação aprovada: npm run build; npx jest --runInBand (284 testes, 21 suítes); npx jest --config ./test/jest-e2e.json --runInBand (73 testes); npx eslint nos seis arquivos TypeScript alterados, sem erros ou avisos; git diff --check. Build compatível com o client atual: nenhuma alteração de código depende de prisma generate; regenerar no ambiente de deploy apenas sincroniza os tipos/metadados com a nova chave composta, que não é usada pelo código. Migration e seed não executados contra PostgreSQL local (Docker sem daemon disponível); validação real pendente no job banco do CI. Nenhuma alteração em node_modules, prisma generate, commit ou push. Status permanece EM ANDAMENTO pelos demais itens.
