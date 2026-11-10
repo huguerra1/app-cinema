@@ -1,6 +1,6 @@
 # ROADMAP — app-cinema
 
-**Status:** EM ANDAMENTO · Prioridade 4 no portfólio
+**Status:** PRONTO PARA REVISÃO · Prioridade 4 no portfólio. O que falta depende do dono: deploy (#11), prints do mobile (#12) e licença com o colaborador (#13).
 
 ## Checklist de "pronto"
 - [x] CI verde: backend (build, unitários e e2e), banco com PostgreSQL real e frontend (build)
@@ -49,3 +49,4 @@
 - 2026-11-09 — Fase 1: JWT_SECRET via ambiente, node_modules/dist fora do git, README corrigido, regras de autonomia.
 - 2026-11-10 — Autenticação: guard JWT e CurrentUser, /order/me e rota legada com 403 para outro usuário; pedidos, ingressos comprados e endereços filtrados pelo token. Profile expõe somente o próprio papel, sem listar usuários; mutações bloqueadas até existir autorização administrativa. PATCH de pedidos rejeita alterações de itens, cuja implementação anterior era provisória e não recalculava totais. Mobile usa /order/me; frontend preservado.
 - 2026-11-10 — Validação local: build aprovado; 67 testes unitários/HTTP e 28 de integração aprovados sem banco, com Prisma mockado. Jest executado com --runInBand porque o sandbox bloqueia processos paralelos (spawn EPERM). ESLint sem erros nos arquivos alterados; permanecem 48 erros de formatação e 1 aviso preexistentes nos demais arquivos. Status geral permanece EM ANDAMENTO; pendências de segurança registradas no backlog. Sem commit/push.
+- 2026-11-10 — Pendências do dono viraram issues (#11–#13). Status: pronto para revisão.
