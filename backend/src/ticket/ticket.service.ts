@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
@@ -25,36 +26,46 @@ export class TicketService {
       }
     }
 
-    const session = await this.prisma.session.findUnique({
-      where: { id: sessionId },
-      include: { room: true },
-    });
+    try {
+      return await this.prisma.$transaction(
+        async (tx) => {
+          // Serializa as compras da mesma sessão antes de consultar a lotação.
+          await tx.$queryRaw`
+            SELECT "id" FROM "Session" WHERE "id" = ${sessionId} FOR UPDATE
+          `;
+          const session = await tx.session.findUnique({
+            where: { id: sessionId },
+            include: { room: true },
+          });
 
-    if (!session) {
-      throw new NotFoundException(`Session with ID ${sessionId} not found.`);
-    }
+          if (!session) {
+            throw new NotFoundException(
+              `Session with ID ${sessionId} not found.`,
+            );
+          }
 
-    const ticketCount = await this.prisma.ticket.count({
-      where: { sessionId },
-    });
+          const ticketCount = await tx.ticket.count({ where: { sessionId } });
+          if (ticketCount >= session.room.capacity) {
+            throw new ConflictException('Sessão lotada.');
+          }
 
-    if (ticketCount >= session.room.capacity) {
-      throw new ConflictException('The session is already at full capacity.');
-    }
-
-    const existingTicket = await this.prisma.ticket.findFirst({
-      where: { sessionId, seat },
-    });
-
-    if (existingTicket) {
-      throw new ConflictException(
-        `Seat ${seat} is already taken for this session.`,
+          // O índice único no banco decide a disputa pelo assento.
+          return tx.ticket.create({
+            data: { sessionId, seat, price: session.price, orderId },
+          });
+        },
+        // Após esperar o bloqueio, a contagem precisa enxergar a compra anterior.
+        { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
       );
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('assento já ocupado');
+      }
+      throw error;
     }
-
-    return this.prisma.ticket.create({
-      data: { sessionId, seat, price: session.price, orderId },
-    });
   }
 
   findAll(userId: string) {

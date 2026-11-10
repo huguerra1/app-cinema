@@ -1,4 +1,9 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { Test } from '@nestjs/testing';
 import { TicketService } from './ticket.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -98,6 +103,99 @@ describe('TicketService', () => {
     expect(prisma.ticket.create).toHaveBeenCalledWith({
       data: { sessionId: 'sessão', seat: 'B2', price: 25, orderId: undefined },
     });
+  });
+
+  it('converte P2002 do banco em 409 para assento ocupado', async () => {
+    prisma.session.findUnique.mockResolvedValue({
+      price: 25,
+      room: { capacity: 10 },
+    });
+    prisma.ticket.count.mockResolvedValue(0);
+    prisma.ticket.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Restrição única violada', {
+        code: 'P2002',
+        clientVersion: '7.5.0',
+        meta: { target: ['sessionId', 'seat'] },
+      }),
+    );
+
+    await expect(
+      service.create({ sessionId: 'sessão', seat: 'A1' }, 'cliente'),
+    ).rejects.toMatchObject({ status: 409, message: 'assento já ocupado' });
+    expect(prisma.ticket.findFirst).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('retorna 409 sem inserir ingresso quando a sessão está lotada', async () => {
+    prisma.session.findUnique.mockResolvedValue({
+      price: 25,
+      room: { capacity: 1 },
+    });
+    prisma.ticket.count.mockResolvedValue(1);
+
+    await expect(
+      service.create({ sessionId: 'sessão', seat: 'A2' }, 'cliente'),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.ticket.create).not.toHaveBeenCalled();
+  });
+
+  it('bloqueia a sessão e usa somente o cliente da transação para contar e criar', async () => {
+    const tx = createPrismaMock();
+    prisma.$transaction.mockImplementation(
+      (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
+    );
+    const steps: string[] = [];
+    tx.$queryRaw.mockImplementation(() => {
+      steps.push('bloqueio');
+      return Promise.resolve([{ id: 'sessão' }]);
+    });
+    tx.session.findUnique.mockImplementation(() => {
+      steps.push('sessão');
+      return Promise.resolve({ price: 25, room: { capacity: 1 } });
+    });
+    tx.ticket.count.mockImplementation(() => {
+      steps.push('contagem');
+      return Promise.resolve(0);
+    });
+    const ticket = { id: 'ingresso', seat: 'A1', price: 25, orderId: null };
+    tx.ticket.create.mockImplementation(() => {
+      steps.push('criação');
+      return Promise.resolve(ticket);
+    });
+
+    await expect(
+      service.create({ sessionId: 'sessão', seat: 'A1' }, 'cliente'),
+    ).resolves.toEqual(ticket);
+    expect(steps).toEqual(['bloqueio', 'sessão', 'contagem', 'criação']);
+    expect(tx.$queryRaw).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.stringContaining('SELECT "id" FROM "Session" WHERE "id" = '),
+        expect.stringContaining('FOR UPDATE'),
+      ]),
+      'sessão',
+    );
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+    });
+    expect(prisma.session.findUnique).not.toHaveBeenCalled();
+    expect(prisma.ticket.count).not.toHaveBeenCalled();
+    expect(prisma.ticket.create).not.toHaveBeenCalled();
+  });
+
+  it('retorna 404 sem inserir quando a sessão não existe', async () => {
+    prisma.session.findUnique.mockResolvedValue(null);
+    await expect(
+      service.create({ sessionId: 'ausente', seat: 'A1' }, 'cliente'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.ticket.create).not.toHaveBeenCalled();
+  });
+
+  it('propaga falhas do banco que não sejam de unicidade', async () => {
+    const error = new Error('Falha na transação');
+    prisma.$queryRaw.mockRejectedValue(error);
+    await expect(
+      service.create({ sessionId: 'sessão', seat: 'A1' }, 'cliente'),
+    ).rejects.toBe(error);
   });
 
   it('ignora preço no PATCH e preserva o preço comprado', async () => {
