@@ -37,46 +37,44 @@ O projeto foi dividido em duas frentes, utilizando as melhores práticas do ecos
 ### Pré-requisitos
 Certifique-se de ter o [Node.js](https://nodejs.org/) e o [PostgreSQL](https://www.postgresql.org/) instalados em sua máquina. O aplicativo mobile requer o aplicativo [Expo Go](https://expo.dev/client) no seu celular ou um emulador configurado.
 
-### 1. Clonando o Repositório
+### 1. Clonando o repositório
 ```bash
-git clone [https://github.com/huguerra1/app-cinema.git](https://github.com/huguerra1/app-cinema.git)
+git clone https://github.com/huguerra1/app-cinema.git
 cd app-cinema
-2. Configurando o Backend
-Bash
+```
+
+### Opção A — Tudo com Docker (banco + API + web)
+```bash
+cp .env.example .env   # defina JWT_SECRET
+docker compose up --build
+```
+A API fica em `http://localhost:3000/api` (Swagger no mesmo endereço) e o front web em `http://localhost:8080`.
+
+### Opção B — Rodando cada parte
+
+**Backend**
+```bash
 cd backend
-
-# Instale as dependências
 npm install
-
-# Crie um arquivo .env na raiz da pasta backend baseado no .env.example
-# Exemplo: DATABASE_URL="postgresql://usuario:senha@localhost:5432/cinema"
-
-# Rode as migrations para criar as tabelas no banco de dados
+cp .env.example .env   # ajuste DATABASE_URL e defina JWT_SECRET
 npx prisma migrate dev
-
-# Inicie o servidor
 npm run start:dev
-3. Configurando o Frontend
-Bash
-cd ../mobile
+```
 
-# Instale as dependências
+**Mobile**
+```bash
+cd mobile
 npm install
-
-# Altere a baseURL no arquivo src/services/api.ts para o IP da sua máquina
-# Exemplo: baseURL: '[http://192.168.0.15:3000](http://192.168.0.15:3000)'
-
-# Inicie o Expo
+# Altere a baseURL em src/services/api.ts para o IP da sua máquina
 npx expo start
-Após iniciar o Expo, escaneie o QR Code gerado no terminal com o aplicativo Expo Go no seu celular.
+```
+Depois de iniciar o Expo, escaneie o QR Code com o aplicativo Expo Go no celular.
 
-🏗️ Modelagem do Banco de Dados (Resumo)
-A arquitetura do banco foi desenhada para refletir um ambiente real de e-commerce e cinema, contendo:
+## 🏗️ Modelagem do banco de dados (resumo)
+A arquitetura do banco foi desenhada para refletir um ambiente real de e-commerce e cinema:
 
-User, Profile e Address (Gestão de Identidade e Segurança).
-
-Movie, Genre, Room e Session (Domínio do Cinema).
-
-Ticket, SnackCombo, Order e SnackCombosOnOrders (Domínio de Vendas e Relacionamento N:M).
+- **Identidade e segurança:** User, Profile e Address
+- **Domínio do cinema:** Movie, Genre, Room e Session
+- **Vendas:** Ticket, SnackCombo, Order e SnackCombosOnOrders (relacionamento N:M)
 
 Feito com dedicação por Hugo Fonseca Mourão 👨‍💻

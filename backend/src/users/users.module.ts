@@ -7,10 +7,17 @@ import { PrismaModule } from '../prisma/prisma.module'; // <-- Certifique-se de 
 @Module({
   imports: [
     PrismaModule, // <-- ELE PRECISA ESTAR AQUI JUNTO COM O JWT!
-    JwtModule.register({
+    JwtModule.registerAsync({
       global: true,
-      secret: 'MINHA_CHAVE_SECRETA_CINEGESTAO_2026', 
-      signOptions: { expiresIn: '1d' }, 
+      useFactory: () => {
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+          throw new Error(
+            'JWT_SECRET não definido. Copie .env.example para .env e defina um valor.',
+          );
+        }
+        return { secret, signOptions: { expiresIn: '1d' } };
+      },
     }),
   ],
   controllers: [UsersController],
