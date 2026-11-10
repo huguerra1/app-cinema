@@ -13,7 +13,7 @@ export class SessionService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createSessionDto: CreateSessionDto) {
-    const { startTime, movieId, roomId } = createSessionDto;
+    const { startTime, movieId, roomId, price } = createSessionDto;
 
     const movie = await this.prisma.movie.findUnique({
       where: { id: movieId },
@@ -37,7 +37,7 @@ export class SessionService {
         session.movie.durationMinutes,
       );
 
-      // Check for overlap: (StartA < EndB) and (StartB < EndA)
+      // Há sobreposição quando o início de cada sessão precede o fim da outra.
       if (newStartTime < existingEndTime && existingStartTime < newEndTime) {
         throw new ConflictException(
           'Session time conflicts with an existing session.',
@@ -50,12 +50,15 @@ export class SessionService {
         startTime: newStartTime,
         movieId,
         roomId,
+        price,
       },
     });
   }
 
   findAll() {
-    return this.prisma.session.findMany({ include: { movie: true, room: true } });
+    return this.prisma.session.findMany({
+      include: { movie: true, room: true },
+    });
   }
 
   findOne(id: string) {

@@ -80,6 +80,7 @@ model Room {
 model Session {
   id        String   @id @default(uuid())
   startTime DateTime
+  price     Float    @default(25)
 
   movie   Movie  @relation(fields: [movieId], references: [id])
   movieId String

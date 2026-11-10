@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { GenreService } from './genre.service';
 import { GenreController } from './genre.controller';
-// 1. Adicione a linha abaixo para importar o PrismaModule:
-import { PrismaModule } from '../prisma/prisma.module'; 
+import { PrismaModule } from '../prisma/prisma.module';
+
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  // 2. Coloque o PrismaModule dentro desta lista de imports:
-  imports: [PrismaModule], 
+  imports: [PrismaModule, AuthModule],
   controllers: [GenreController],
   providers: [GenreService],
 })

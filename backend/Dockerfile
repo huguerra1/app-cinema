@@ -26,8 +26,11 @@ COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/package.json ./package.json
 COPY --from=builder /usr/src/app/prisma ./prisma
+COPY --from=builder /usr/src/app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /usr/src/app/tsconfig.json ./tsconfig.json
+COPY --from=builder /usr/src/app/src ./src
 
 EXPOSE 3000
 
 # The command will first run migrations and then start the application.
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main"]

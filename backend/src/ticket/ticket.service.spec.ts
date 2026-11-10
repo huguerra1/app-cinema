@@ -62,7 +62,10 @@ describe('TicketService', () => {
   });
 
   it('mantém a criação de ingressos ainda sem pedido usada pelo mobile', async () => {
-    prisma.session.findUnique.mockResolvedValue({ room: { capacity: 10 } });
+    prisma.session.findUnique.mockResolvedValue({
+      price: 37.5,
+      room: { capacity: 10 },
+    });
     prisma.ticket.count.mockResolvedValue(0);
     prisma.ticket.findFirst.mockResolvedValue(null);
     await service.create(
@@ -70,8 +73,50 @@ describe('TicketService', () => {
       'cliente',
     );
     expect(prisma.ticket.create).toHaveBeenCalledWith({
-      data: { sessionId: 'sessão', seat: 'A1', price: 10, orderId: undefined },
+      data: {
+        sessionId: 'sessão',
+        seat: 'A1',
+        price: 37.5,
+        orderId: undefined,
+      },
     });
+  });
+
+  it('cria sem preço no corpo e usa o preço da sessão', async () => {
+    prisma.session.findUnique.mockResolvedValue({
+      price: 25,
+      room: { capacity: 10 },
+    });
+    prisma.ticket.count.mockResolvedValue(0);
+    prisma.ticket.findFirst.mockResolvedValue(null);
+    await service.create({ sessionId: 'sessão', seat: 'B2' }, 'cliente');
+    expect(prisma.ticket.create).toHaveBeenCalledWith({
+      data: { sessionId: 'sessão', seat: 'B2', price: 25, orderId: undefined },
+    });
+  });
+
+  it('ignora preço no PATCH e preserva o preço comprado', async () => {
+    prisma.ticket.findFirst.mockResolvedValue({
+      id: 'ingresso',
+      sessionId: 'sessão',
+      price: 37.5,
+    });
+    await service.update('ingresso', { seat: 'B2', price: 1 }, 'cliente');
+    expect(prisma.ticket.update).toHaveBeenCalledWith({
+      where: { id: 'ingresso', order: { userId: 'cliente' } },
+      data: { seat: 'B2' },
+    });
+  });
+
+  it('não troca a sessão de um ingresso comprado', async () => {
+    prisma.ticket.findFirst.mockResolvedValue({
+      id: 'ingresso',
+      sessionId: 'sessão',
+    });
+    await expect(
+      service.update('ingresso', { sessionId: 'outra' }, 'cliente'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.ticket.update).not.toHaveBeenCalled();
   });
 
   it('não transfere um ingresso para outro pedido', async () => {

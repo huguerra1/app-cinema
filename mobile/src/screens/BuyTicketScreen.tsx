@@ -63,7 +63,7 @@ export default class BuyTicketScreen extends Component<BuyTicketScreenProps, Buy
       const fileira = ['A', 'B', 'C', 'D', 'E'][Math.floor(Math.random() * 5)];
       const numero = Math.floor(Math.random() * 20) + 1;
       const cadeira = `${fileira}${numero}`;
-      const precoFixo = 25.00;
+      const precoSessao = Number(sessaoCompleta.price);
 
       // 2. Monta o objeto do Item do Carrinho
       const novoItemCarrinho = {
@@ -71,7 +71,7 @@ export default class BuyTicketScreen extends Component<BuyTicketScreenProps, Buy
         tipo: 'ingresso',
         sessionId: sessaoSelecionada,
         seat: cadeira,
-        price: precoFixo,
+        price: precoSessao,
         tituloVisual: `🎬 ${sessaoCompleta?.movie?.title || 'Filme'}`,
         detalheVisual: `Sala: ${sessaoCompleta?.room?.name || '?'} | Cadeira: ${cadeira}`,
       };
@@ -142,7 +142,7 @@ export default class BuyTicketScreen extends Component<BuyTicketScreenProps, Buy
                   🕒 {this.formatarData(sessao.startTime)}
                 </Text>
                 <Text style={styles.sessionDetails}>
-                  🚪 Sala: {sessao.room?.name || 'Não informada'}
+                  🚪 Sala: {sessao.room?.name || 'Não informada'} | R$ {Number(sessao.price).toFixed(2)}
                 </Text>
               </TouchableOpacity>
             ))
