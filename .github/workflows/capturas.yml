@@ -28,8 +28,8 @@ jobs:
       ADMIN_EMAIL: admin@example.com
       ADMIN_PASSWORD: senha-do-admin-nas-capturas
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       # O repositório usa workspaces do npm: os dois `npm ci` reinstalam o node_modules da raiz, então
@@ -60,7 +60,7 @@ jobs:
           mkdir -p capturas /tmp/pptr && cd /tmp/pptr && npm init -y > /dev/null && npm install puppeteer@24 > /dev/null
           cp "$GITHUB_WORKSPACE/.github/scripts/capturar-painel.mjs" /tmp/pptr/
           node /tmp/pptr/capturar-painel.mjs "$GITHUB_WORKSPACE/capturas" || (cat /tmp/api.log /tmp/web.log; exit 1)
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: capturas
           path: capturas/
