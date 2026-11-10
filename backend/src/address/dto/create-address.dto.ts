@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateAddressDto {
   @IsString() @IsNotEmpty() street!: string;
@@ -7,8 +13,12 @@ export class CreateAddressDto {
   @IsString() @IsNotEmpty() city!: string;
   @IsString() @IsNotEmpty() state!: string;
   @IsString() @IsNotEmpty() zipCode!: string;
-  
-  @ApiProperty({ description: 'ID do Usuário dono deste endereço' })
+
+  @ApiProperty({
+    description: 'ID legado opcional; deve corresponder ao token.',
+    required: false,
+  })
+  @IsOptional()
   @IsUUID()
-  userId!: string;
+  userId?: string;
 }

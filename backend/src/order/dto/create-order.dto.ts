@@ -1,20 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsArray,
-  IsOptional,
-  IsUUID,
-  ValidateNested,
-} from 'class-validator';
+import { IsArray, IsOptional, IsUUID, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { SnackComboOrderDto } from './snack-combo-order.dto';
 
 export class CreateOrderDto {
   @ApiProperty({
-    description: 'The UUID of the user placing the order.',
+    description: 'ID legado opcional; deve corresponder ao usuário do token.',
+    required: false,
     example: '0c8c2552-a9b3-483a-b286-4471f9e73b98',
   })
   @IsUUID()
-  userId: string;
+  @IsOptional()
+  userId?: string;
 
   @ApiProperty({
     description: 'An array of ticket UUIDs to be included in the order.',
@@ -31,8 +28,7 @@ export class CreateOrderDto {
   ticketIds?: string[];
 
   @ApiProperty({
-    description:
-      'An array of objects, each with a snackComboId and quantity.',
+    description: 'An array of objects, each with a snackComboId and quantity.',
     required: false,
     type: [SnackComboOrderDto],
   })
@@ -42,4 +38,3 @@ export class CreateOrderDto {
   @IsOptional()
   snackCombos?: SnackComboOrderDto[];
 }
-

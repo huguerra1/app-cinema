@@ -7,47 +7,55 @@ import {
   Param,
   Delete,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { TicketService } from './ticket.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
+import type { JwtPayload } from '../auth/current-user.decorator';
 
 @ApiTags('ticket')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('ticket')
 export class TicketController {
   constructor(private readonly ticketService: TicketService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new ticket' })
-  create(@Body() createTicketDto: CreateTicketDto) {
-    return this.ticketService.create(createTicketDto);
+  create(@Body() dto: CreateTicketDto, @CurrentUser() user: JwtPayload) {
+    return this.ticketService.create(dto, user.sub);
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all tickets' })
-  findAll() {
-    return this.ticketService.findAll();
+  findAll(@CurrentUser() user: JwtPayload) {
+    return this.ticketService.findAll(user.sub);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a ticket by ID' })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.ticketService.findOne(id);
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.ticketService.findOne(id, user.sub);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a ticket by ID' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateTicketDto: UpdateTicketDto,
+    @Body() dto: UpdateTicketDto,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.ticketService.update(id, updateTicketDto);
+    return this.ticketService.update(id, dto, user.sub);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a ticket by ID' })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.ticketService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.ticketService.remove(id, user.sub);
   }
 }
