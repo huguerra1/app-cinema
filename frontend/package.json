@@ -8,8 +8,8 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "bootstrap": "^5.3.8",
+    "bootstrap": "^5.3.9",
     "typescript": "^6.0.2",
-    "vite": "^8.3.6"
+    "vite": "^8.3.8"
   }
 }
